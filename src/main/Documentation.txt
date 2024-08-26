@@ -1,0 +1,75 @@
+Class: Agent
+Location: com.example.trongp.GP
+Description: Represents an individual in the genetic programming system, holding a strategy tree and performance metrics.
+Properties:
+Node strategy: Decision-making structure for game strategies.
+double fitness: Performance metric based on game outcomes and trail length.
+int number: Identifier for the agent, used in games to differentiate agents.
+Methods:
+makeMove(GameState gameState, int agentNumber): Calculates next move based on current game state using the strategy.
+clone(): Creates a deep copy of the agent, including cloning the strategy tree.
+recordGameResult(boolean won, double trailLength): Updates fitness based on game results and trail length.
+Getters and setters for strategy, fitness, and agent number.
+Class: Population
+Location: com.example.trongp.GP
+Description: Manages a collection of agents, facilitating fitness evaluation and evolutionary processes.
+Properties:
+List<Agent> agents: List of agents comprising the population.
+Methods:
+evaluateFitness(Population opponentPopulation): Evaluates and updates the fitness of each agent based on competition with another population.
+evolve(): Applies genetic operators (selection, crossover, mutation) to evolve the population.
+getBestAgent(): Retrieves the agent with the highest fitness from the population.
+Class: TronController
+Location: com.example.trongp
+Description: Manages game mechanics, including running simulations and rendering for visualization.
+Properties:
+GameState gameState: Current state of the Tron game, tracking positions and game progress.
+GraphicsContext gc: JavaFX context used for drawing the game on a canvas.
+Methods:
+runVisualizationGame(Agent redAgent, Agent blueAgent): Executes a game for visualization, displaying the movements of agents.
+initialize(): Resets the game state to start a new game.
+renderGame(): Draws the current state of the game to the graphics context.
+Class: ActionNode
+Location: com.example.trongp.GP
+Subclass Of: Node
+Description: Represents a terminal node in a strategy tree that decides an action (move direction).
+Properties:
+int action: Specific move direction encoded as an integer.
+Methods:
+evaluate(GameState gameState, int agentNumber): Returns the action associated with this node.
+crossover(Node other): Creates a new node by combining this node with another node.
+mutate(): Randomly changes the node's action.
+Class: DecisionNode
+Location: com.example.trongp.GP
+Subclass Of: Node
+Description: A decision-making node in a strategy tree that branches based on game state evaluations.
+Properties:
+Node left, Node right: Child nodes representing the outcomes of the decision.
+int decisionFeature: Feature of the game state used to make a decision.
+Methods:
+evaluate(GameState gameState, int agentNumber): Evaluates the game state and decides the next node to execute.
+crossover(Node other), mutate(), clone(): Genetic operations to alter the decision structure of the tree.
+Class: Node
+Location: com.example.trongp.GP
+Description: Abstract base class for nodes in a strategy tree.
+Methods:
+Abstract methods for evaluating game states, crossing over with other nodes, mutating, and cloning.
+Class: GPFramework
+Location: com.example.trongp.GP
+Description: Framework managing the setup and execution of the genetic programming process.
+Properties:
+Methods:
+runEvolution(): Initiates and controls the evolutionary process.
+Class: FitnessPlotter
+Location: com.example.trongp
+Description: Utility class for visualizing fitness changes over generations using graphical plots.
+Static Methods:
+updatePlot(...), updatePopulationStats(...): Methods to update graphical data and refresh plots.
+Class: GameState
+Location: com.example.trongp
+Description: Manages the state of the game, including agent positions, game area, and game over conditions.
+Methods:
+isGameOver(), update(...), initializeGrid(...): Manage game logic and state updates.
+Miscellaneous Classes:
+Classes: Point, Trail, NodeFactory, Strategy
+Descriptions: Support various functionalities such as managing points on a grid, path tracking, creating strategy nodes, and encapsulating decision-making strategies.
