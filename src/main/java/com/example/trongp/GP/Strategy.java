@@ -6,7 +6,7 @@ public class Strategy {
     private Node root;
 
     public Strategy(int maxDepth) {
-        this.root = NodeFactory.createRandomNode(maxDepth, true);
+        this.root = NodeFactory.createRandomNode(maxDepth);
     }
 
     public Strategy(Node root) {
@@ -22,7 +22,7 @@ public class Strategy {
     }
 
     public Strategy crossover(Strategy other) {
-        Node newRoot = this.root.crossover(other.root);
+        Node newRoot = this.root.crossover(other.getRoot());
         return new Strategy(newRoot);
     }
 
@@ -41,8 +41,8 @@ public class Strategy {
     public void setRoot(Node root) {
         this.root = root;
     }
+
     public int decideMove(GameState gameState, int agentNumber) {
         return root.evaluate(gameState, agentNumber);
     }
-    
 }

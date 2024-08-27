@@ -21,4 +21,18 @@ public class Trail {
     public boolean containsPoint(int x, int y) {
         return trailPoints.contains(new Point(x, y));
     }
+
+    public int getLastMove() {
+        if (trailPoints.size() < 2) {
+            return -1;
+        }
+        Point lastPoint = trailPoints.get(trailPoints.size() - 1);
+        Point secondLastPoint = trailPoints.get(trailPoints.size() - 2);
+
+        if (lastPoint.getX() == secondLastPoint.getX()) {
+            return lastPoint.getY() > secondLastPoint.getY() ? 1 : 0;
+        } else {
+            return lastPoint.getX() > secondLastPoint.getX() ? 3 : 2;
+        }
+    }
 }

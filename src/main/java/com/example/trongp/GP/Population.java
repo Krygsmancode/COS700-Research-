@@ -1,104 +1,87 @@
 package com.example.trongp.GP;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 
-import com.example.trongp.FitnessPlotter;
-
 public class Population {
     private List<Agent> agents;
-    private Random random = new Random();
-    private int totalGames = GPParameters.GAMES_TO_PLAY;
+    private Random random ;
 
-    public Population(int size, int maxDepth) {
+    public Population(int size, int maxDepth, Random random) {
+        this.random = random;
         agents = new ArrayList<>();
         for (int i = 0; i < size; i++) {
-            agents.add(new Agent(NodeFactory.createRandomNode(maxDepth, true), i + 1));
+            // Generate a random strategy tree for each agent
+            Strategy randomStrategy = new Strategy(maxDepth);
+            agents.add(new Agent(randomStrategy, i + 1));
         }
     }
 
-    
+    public List<Agent> getAgents() {
+        return agents;
+    }
 
     public void evolve() {
         List<Agent> newAgents = new ArrayList<>();
-
-        // Elitism: Preserve the best agent from the current generation
-        Agent bestAgent = getBestAgent();
-        newAgents.add(bestAgent.clone()); // Ensure the best agent is cloned and not directly referenced
-        logEliteAgent(bestAgent); // Log the elite agent's fitness
-
         while (newAgents.size() < agents.size()) {
             Agent parent1 = selectAgent();
             Agent parent2 = selectAgent();
-            Agent child = crossover(parent1, parent2);
-            mutate(child);
-            newAgents.add(child);
+            Agent offspring = crossover(parent1, parent2);
+            mutate(offspring);
+            newAgents.add(offspring);
         }
-        this.agents = newAgents;
+        agents = newAgents;
     }
-
-    private void logEliteAgent(Agent bestAgent) {
-      System.out.println(bestAgent);
-    }
-
-
-
     public void evaluateFitness(Population opponentPopulation) {
         agents.forEach(agent -> {
             int wins = 0;
-            for (Agent opponent : opponentPopulation.agents) {
+            for (Agent opponent : opponentPopulation.getAgents()) {
                 if (agent != opponent) {
-                    boolean result = agent.compete(opponent); // Assumes Agent has a compete method
+                    boolean result = agent.compete(opponent);
                     wins += result ? 1 : 0;
                 }
             }
-            double winRatio = (double) wins / (GPParameters.GAMES_TO_PLAY * opponentPopulation.agents.size());
-            agent.setFitness(winRatio * GPParameters.WIN_WEIGHT);
+            double winRatio = (double) wins / (GPParameters.GAMES_TO_PLAY * opponentPopulation.getAgents().size());
+            double calculatedFitness = winRatio * GPParameters.WIN_WEIGHT;
+            agent.setFitness(calculatedFitness);
+            System.out.println("Agent " + agent.getNumber() + " fitness: " + agent.getFitness());
         });
     }
-    public Agent getBestAgent() {
-        return Collections.max(agents, Comparator.comparingDouble(Agent::getFitness));
-    }
-    
     
 
+    public Agent getBestAgent() {
+        return agents.stream().max((a, b) -> Double.compare(a.getFitness(), b.getFitness())).orElse(null);
+    }
+
+  
+
     private Agent selectAgent() {
-        List<Agent> tournament = new ArrayList<>();
+        Agent best = null;
         for (int i = 0; i < GPParameters.TOURNAMENT_SIZE; i++) {
             Agent candidate = agents.get(random.nextInt(agents.size()));
-            tournament.add(candidate);
+            if (best == null || candidate.getFitness() > best.getFitness()) {
+                best = candidate;
+            }
         }
-        return Collections.max(tournament, Comparator.comparingDouble(Agent::getFitness));
+        return best;
     }
 
     private Agent crossover(Agent parent1, Agent parent2) {
-        return new Agent(parent1.getStrategy().crossover(parent2.getStrategy()), parent1.getNumber());
+        Strategy offspringStrategy = parent1.getStrategy().crossover(parent2.getStrategy());
+        return new Agent(offspringStrategy, parent1.getNumber());
     }
 
     private void mutate(Agent agent) {
-        if (random.nextDouble() < GPParameters.MUTATION_RATE) {
-            agent.getStrategy().mutate();
-        }
+        agent.getStrategy().mutate();
     }
 
     public double calculateAverageFitness() {
         return agents.stream().mapToDouble(Agent::getFitness).average().orElse(0.0);
     }
 
-    public double calculateMaxFitness() {
-        return agents.stream().mapToDouble(Agent::getFitness).max().orElse(0.0);
-    }
-
     public double calculateFitnessVariance() {
-        double average = calculateAverageFitness();
-        double variance = agents.stream().mapToDouble(agent -> Math.pow(agent.getFitness() - average, 2)).sum();
-        return variance / agents.size();
+        double averageFitness = calculateAverageFitness();
+        return agents.stream().mapToDouble(agent -> Math.pow(agent.getFitness() - averageFitness, 2)).sum() / agents.size();
     }
-
-
-
-   
 }

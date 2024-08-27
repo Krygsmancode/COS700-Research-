@@ -38,6 +38,9 @@ dependencies {
 implementation 'org.jfree:jcommon:1.0.24'
 
 
+ testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
+
     implementation('org.controlsfx:controlsfx:11.1.0')
     implementation('com.dlsc.formsfx:formsfx-core:11.3.2') {
         exclude(group: 'org.openjfx')
@@ -56,7 +59,11 @@ implementation 'org.jfree:jcommon:1.0.24'
 }
 
 test {
-    useJUnitPlatform()
+    testLogging {
+        // Set options to display the standard out and standard error streams.
+        showStandardStreams = true
+        events "passed", "skipped", "failed"
+    }
 }
 
 jlink {

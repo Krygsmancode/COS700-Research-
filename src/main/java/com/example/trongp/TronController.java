@@ -2,54 +2,58 @@ package com.example.trongp;
 
 import com.example.trongp.GP.Agent;
 import com.example.trongp.GameState;
+
 import com.example.trongp.GP.GPParameters;
-import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.paint.Color;
+
 
 public class TronController {
-    private GameState gameState;
-    private GraphicsContext gc;
 
-    public TronController(GraphicsContext gc) {
-        this.gc = gc;
+    private GameState gameState;
+
+    public void initialize() {
         this.gameState = new GameState(GPParameters.GRID_SIZE, GPParameters.GRID_SIZE);
     }
 
-    public void runVisualizationGame(Agent redAgent, Agent blueAgent) {
-        initialize();
+    public boolean runSingleGame(Agent agent1, Agent agent2, boolean render) {
         while (!gameState.isGameOver()) {
-            int redMove = redAgent.makeMove(gameState);
-            int blueMove = blueAgent.makeMove(gameState);
+            int redMove = agent1.makeMove(gameState, 1);
+            int blueMove = agent2.makeMove(gameState, 2);
+    
+            System.out.println("Agent 1 move: " + redMove);
+            System.out.println("Agent 2 move: " + blueMove);
+    
             gameState.update(redMove, blueMove);
-            renderGame();
-            try {
-                Thread.sleep(500);  // Delay for visualization purposes
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+    
+            // If rendering is required, add code here for visualization
+        }
+    
+        boolean agent1Won = gameState.didAgentWin(agent1);
+    
+        // Record the game result
+      
+        return agent1Won;
+    }
+    
+    
+
+    public void runSimulation(int generations) {
+        for (int generation = 1; generation <= generations; generation++) {
+            System.out.println("Generation " + generation + " in progress...");
+            
+            // Initialize game state and agents
+            initialize();
+        
+            
+            // Simulate a single game between the two agents
+         
+            
+            System.out.println("-----------------------------------");
         }
     }
+    
+    
 
-    private void initialize() {
-        gameState = new GameState(GPParameters.GRID_SIZE, GPParameters.GRID_SIZE);
-    }
-
-    private void renderGame() {
-        int cellSize = 10;  // Assume each cell in the grid is 10x10 pixels
-        gc.setFill(Color.BLACK);
-        gc.fillRect(0, 0, GPParameters.GRID_SIZE * cellSize, GPParameters.GRID_SIZE * cellSize);
-
-        for (int i = 0; i < GPParameters.GRID_SIZE; i++) {
-            for (int j = 0; j < GPParameters.GRID_SIZE; j++) {
-                if (gameState.getGrid()[i][j] == 1) {
-                    gc.setFill(Color.RED);
-                } else if (gameState.getGrid()[i][j] == 2) {
-                    gc.setFill(Color.BLUE);
-                } else {
-                    continue;
-                }
-                gc.fillRect(i * cellSize, j * cellSize, cellSize, cellSize);
-            }
-        }
+    public int getTrailLength(Agent agent) {
+        return gameState.calculateTrailLength(agent);
     }
 }
