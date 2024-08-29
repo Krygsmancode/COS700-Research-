@@ -1,18 +1,26 @@
 package com.example.trongp;
 
-import com.example.trongp.GP.Agent;
-import com.example.trongp.GP.GPParameters;
-
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Locale;
 
-public class CSVSaver implements AutoCloseable {  // Implement AutoCloseable
+import com.example.trongp.GP.Agent;
+import com.example.trongp.GP.GPParameters;
+
+public class CSVSaver implements AutoCloseable {
     private PrintWriter writer;
 
     public CSVSaver(String fileName) throws IOException {
-        writer = new PrintWriter(new FileWriter(fileName, true)); // Append mode
-        writeHeader();
+        File file = new File(fileName);
+        boolean fileExists = file.exists();
+        
+        writer = new PrintWriter(new FileWriter(file, true)); // Append mode
+
+        if (!fileExists) {
+            writeHeader();
+        }
     }
 
     private void writeHeader() {
@@ -20,7 +28,7 @@ public class CSVSaver implements AutoCloseable {  // Implement AutoCloseable
     }
 
     public void saveRun(int seed, Agent bestRedAgent, Agent bestBlueAgent) {
-        writer.printf("%d,%d,%d,%.2f,%d,%.2f,%d,%d,%d,%.2f,%.2f,%.2f,%.2f%n",
+        writer.printf(Locale.US, "%d,%d,%d,%.2f,%d,%.2f,%d,%d,%d,%.2f,%.2f,%.3f,%.3f%n",
                 seed,
                 GPParameters.POPULATION_SIZE,
                 GPParameters.MAX_DEPTH,

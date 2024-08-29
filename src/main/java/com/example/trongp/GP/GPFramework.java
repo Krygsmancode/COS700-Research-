@@ -16,8 +16,8 @@ public class GPFramework {
         this.generations = generations;
     }
 
-    private Agent bestRedAgentOverall = null;
-    private Agent bestBlueAgentOverall = null;
+    public static Agent bestRedAgentOverall = null;
+    public static Agent bestBlueAgentOverall = null;
     
     public void runEvolution() {
         for (int generation = 1; generation <= generations; generation++) {

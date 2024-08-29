@@ -137,4 +137,13 @@ public class GameState {
             System.out.println();
         }
     }
+
+    public int getAgent1Direction() {
+        return agent1Trail.getLastMove();
+    }
+
+    public int getAgent2Direction() {
+        return agent2Trail.getLastMove();
+    }
+    
 }

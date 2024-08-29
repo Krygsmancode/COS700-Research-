@@ -17,21 +17,41 @@ public class DecisionNode extends Node {
 
     public DecisionNode(int maxDepth) {
         super(maxDepth);
-        this.decisionFeature = new Random().nextInt(6); // Assuming you have 6 different features
+        this.decisionFeature = random.nextInt(6); // Properly assign a valid feature index
+        
+        // Debugging statement to check the maxDepth and decisionFeature
+        System.out.println("Creating DecisionNode with maxDepth: " + maxDepth + " and decisionFeature: " + decisionFeature);
+    
         // Recursively create left and right child nodes with reduced depth
-        this.left = NodeFactory.createRandomNode(maxDepth - 1);
-        this.right = NodeFactory.createRandomNode(maxDepth - 1);
+        if (maxDepth > 0) {
+            this.left = NodeFactory.createRandomNode(maxDepth - 1);
+            this.right = NodeFactory.createRandomNode(maxDepth - 1);
+        } else {
+            this.left = new ActionNode(); // Terminal node
+            this.right = new ActionNode(); // Terminal node
+        }
     }
-
+    
     @Override
     public int evaluate(GameState gameState, int agentNumber) {
         double[] features = extractFeatures(gameState, agentNumber);
+        
+        // Debugging output to understand what is happening
+      //  System.out.println("Evaluating DecisionNode. DecisionFeature: " + decisionFeature + ", Features length: " + features.length);
+        
+        // Ensure decisionFeature is within the bounds of the features array
+        if (decisionFeature >= features.length) {
+            System.err.println("Error: decisionFeature index " + decisionFeature + " is out of bounds for features array of length " + features.length);
+            return -1; // or some safe default value
+        }
+    
         if (features[decisionFeature] > 0.5) {
             return left.evaluate(gameState, agentNumber);
         } else {
             return right.evaluate(gameState, agentNumber);
         }
     }
+    
 
     private double[] extractFeatures(GameState gameState, int agentNumber) {
         double[] features = new double[6];
@@ -49,74 +69,41 @@ public class DecisionNode extends Node {
     }
 
     private double distanceToOpponent(double agentX, double agentY, double opponentX, double opponentY) {
-        //create function 
+
         return Math.sqrt(Math.pow(agentX - opponentX, 2) + Math.pow(agentY - opponentY, 2));
-
     }
-
     private double distanceToEnemyTrail(GameState gameState, double agentX, double agentY, int agentNumber) {
-       
         double opponentX = agentNumber == 1 ? gameState.getAgent2X() : gameState.getAgent1X();
         double opponentY = agentNumber == 1 ? gameState.getAgent2Y() : gameState.getAgent1Y();
-        int opponentNumber = agentNumber == 1 ? 2 : 1;
-        int opponentMove = gameState.getAgentMove(opponentNumber);
-        double newOpponentX = opponentX;
-        double newOpponentY = opponentY;
-        switch (opponentMove) {
-            case 0:
-                newOpponentY -= 1;
-                break;
-            case 1:
-                newOpponentY += 1;
-                break;
-            case 2:
-                newOpponentX -= 1;
-                break;
-            case 3:
-                newOpponentX += 1;
-                break;
-        }
-        return Math.sqrt(Math.pow(agentX - newOpponentX, 2) + Math.pow(agentY - newOpponentY, 2));
-    }
-
-    private double distanceToWall(GameState gameState, double agentX, double agentY, String string) {
-        int[][] grid = gameState.getGrid();
-        int width = gameState.getWidth();
-        int height = gameState.getHeight();
-        switch (string) {
-            case "UP":
-                for (int i = (int) agentY; i >= 0; i--) {
-                    if (grid[(int) agentX][i] != 0) {
-                        return agentY - i;
-                    }
-                }
-                return agentY;
-            case "DOWN":
-                for (int i = (int) agentY; i < height; i++) {
-                    if (grid[(int) agentX][i] != 0) {
-                        return i - agentY;
-                    }
-                }
-                return height - agentY;
-            case "LEFT":
-                for (int i = (int) agentX; i >= 0; i--) {
-                    if (grid[i][(int) agentY] != 0) {
-                        return agentX - i;
-                    }
-                }
-                return agentX;
-            case "RIGHT":
-                for (int i = (int) agentX; i < width; i++) {
-                    if (grid[i][(int) agentY] != 0) {
-                        return i - agentX;
-                    }
-                }
-                return width - agentX;
+        int opponentDirection = agentNumber == 1 ? gameState.getAgent2Direction() : gameState.getAgent1Direction();
+    
+        switch (opponentDirection) {
+            case 0: // Up
+                return Math.abs(opponentY - agentY);
+            case 1: // Down
+                return Math.abs(agentY - opponentY);
+            case 2: // Left
+                return Math.abs(opponentX - agentX);
+            case 3: // Right
+                return Math.abs(agentX - opponentX);
             default:
-                return 0;
+                return Double.MAX_VALUE; // Should never reach here, but return a large number just in case
         }
-       
     }
+    
+
+    private double distanceToWall(GameState gameState, double agentX, double agentY, String direction) {
+        if (direction.equals("UP")) {
+            return agentY;
+        } else if (direction.equals("DOWN")) {
+            return gameState.getHeight() - agentY - 1;  // Subtract 1 because coordinates are zero-indexed
+        } else if (direction.equals("LEFT")) {
+            return agentX;
+        } else {  // "RIGHT"
+            return gameState.getWidth() - agentX - 1;  // Subtract 1 because coordinates are zero-indexed
+        }
+    }
+    
 
     @Override
     public Node crossover(Node other) {
@@ -134,10 +121,10 @@ public class DecisionNode extends Node {
         }
     }
 
-    @Override
     public void mutate() {
         if (random.nextDouble() < GPParameters.MUTATION_RATE) {
-            decisionFeature = random.nextInt(6); // 6 features
+            decisionFeature = random.nextInt(6); // Ensure decisionFeature stays within valid bounds
+           
         }
         left.mutate();
         right.mutate();
