@@ -4,16 +4,15 @@ import com.example.trongp.GameState;
 import java.util.Random;
 
 public class ActionNode extends Node {
-    private int action; // 0: up, 1: down, 2: left, 3: right
-    private static final Random random = new Random();
+    private int action; // 0: Up, 1: Down, 2: Left, 3: Right
 
-    public ActionNode() {
-        super(1); // Action nodes are leaves, depth is 1
-        this.action = random.nextInt(4); // Random action
+    public ActionNode(Random random) {
+        super(1, random);
+        this.action = random.nextInt(4); // Random action between 0 and 3
     }
 
-    public ActionNode(int action) {
-        super(1);
+    public ActionNode(int action, Random random) {
+        super(1, random);
         this.action = action;
     }
 
@@ -23,8 +22,8 @@ public class ActionNode extends Node {
     }
 
     @Override
-    public Node crossover(Node other) {
-        return random.nextBoolean() ? this : other;
+    public Node clone() {
+        return new ActionNode(this.action, random);
     }
 
     @Override
@@ -36,6 +35,25 @@ public class ActionNode extends Node {
 
     @Override
     public String toString() {
-        return "ActionNode(" + action + ")";
+        String actionStr;
+        switch (action) {
+            case 0: actionStr = "Up"; break;
+            case 1: actionStr = "Down"; break;
+            case 2: actionStr = "Left"; break;
+            case 3: actionStr = "Right"; break;
+            default: actionStr = "UnknownAction"; break;
+        }
+        return "Action(" + actionStr + ")";
+    }
+
+    @Override
+    public Node crossover(Node other) {
+        if (!(other instanceof ActionNode)) {
+            System.err.println("Crossover attempted between incompatible types. Returning a clone.");
+            return this.clone();
+        }
+        ActionNode otherNode = (ActionNode) other;
+        int newAction = random.nextBoolean() ? this.action : otherNode.action;
+        return new ActionNode(newAction, random);
     }
 }

@@ -27,11 +27,12 @@ public class CSVSaver implements AutoCloseable {
         writer.println("Seed,Population Size,Max Depth,Mutation Rate,Tournament Size,Crossover Rate,Grid Size,Generations,Games to Play,Win Weight,Trail Weight,Best Red Agent Fitness,Best Blue Agent Fitness");
     }
 
-    public void saveRun(int seed, Agent bestRedAgent, Agent bestBlueAgent) {
-        writer.printf(Locale.US, "%d,%d,%d,%.2f,%d,%.2f,%d,%d,%d,%.2f,%.2f,%.3f,%.3f%n",
-                seed,
+    public void saveRun(Agent bestRedAgent, Agent bestBlueAgent) {
+        writer.printf(Locale.US, "%d,%d,%d,%d,%.2f,%d,%.2f,%d,%d,%d,%.2f,%.2f,%.3f,%.3f%n",
+                GPParameters.SEED,
                 GPParameters.POPULATION_SIZE,
-                GPParameters.MAX_DEPTH,
+                GPParameters.phase1MaxDepth,
+                GPParameters.phase2MaxDepth,
                 GPParameters.MUTATION_RATE,
                 GPParameters.TOURNAMENT_SIZE,
                 GPParameters.CROSSOVER_RATE,

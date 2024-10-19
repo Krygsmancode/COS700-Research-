@@ -3,12 +3,13 @@ package com.example.trongp.GP;
 import com.example.trongp.GameState;
 import java.util.Random;
 
-public abstract class Node implements Cloneable{
+public abstract class Node {
+    protected Random random;
     protected int depth;
-    protected static Random random = new Random();
 
-    public Node(int depth) {
+    public Node(int depth, Random random) {
         this.depth = depth;
+        this.random = random;
     }
 
     public abstract int evaluate(GameState gameState, int agentNumber);
@@ -20,12 +21,10 @@ public abstract class Node implements Cloneable{
         return depth;
     }
 
-    @Override
-    public Node clone() {
-        try {
-            return (Node) super.clone();
-        } catch (CloneNotSupportedException e) {
-            throw new RuntimeException(e);
-        }
+    public boolean isCompatibleForCrossover(Node other) {
+        return this.getClass().equals(other.getClass());
     }
+
+    @Override
+    public abstract Node clone();
 }

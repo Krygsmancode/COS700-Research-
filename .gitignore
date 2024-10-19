@@ -1,0 +1,23 @@
+# Ignore build and Gradle directories
+/.gradle
+/build
+/bin
+
+# Ignore compiled Java files
+*.class
+
+# Ignore distribution archives
+*.jar
+*.tar
+*.zip
+
+# IntelliJ project files
+.idea/
+*.iml
+
+# Mac specific files
+.DS_Store
+
+# Logs and temporary files
+*.log
+*.tmp

@@ -3,26 +3,32 @@ package com.example.trongp.GP;
 import java.util.Random;
 
 public class NodeFactory {
-
-    private static Random random;
-
-    public static void setRandomSeed(Random rand) {
-        random = rand;
-    }
-    public static Node createRandomNode(int maxDepth) {
-        if (maxDepth <= 0) {
-            return new ActionNode(); // Terminal node with a random action
-        }
-        if (random.nextDouble() < 0.5) { // Ensure randomness is consistent with seed
-            int decisionFeature = random.nextInt(6); // Randomly select a decision feature
-            return new DecisionNode(decisionFeature, createRandomNode(maxDepth - 1), createRandomNode(maxDepth - 1)); // Create a decision node with a valid decisionFeature
+    public static Node grow(int depth, Random random) {
+        if (depth <= 2) {
+            return new ActionNode(random);
         } else {
-            return new ActionNode(); // Terminal action node
+            int decisionFeature = random.nextInt(DecisionNode.NUM_FEATURES); // Adjusted if you have a specific number of features
+            double threshold = random.nextDouble(); // Generate a random threshold
+            Node leftChild = grow(depth - 1, random);
+            Node rightChild = grow(depth - 1, random);
+            return new DecisionNode(decisionFeature, threshold, leftChild, rightChild, random);
         }
     }
-    
 
-    public static Strategy createRandomNode(int maxDepth, boolean b) {
-        return new Strategy(createRandomNode(maxDepth));
+    public static Node full(int depth, Random random) {
+        if (depth <= 2) {
+            return new ActionNode(random);
+        } else {
+            int decisionFeature = random.nextInt(DecisionNode.NUM_FEATURES);
+            double threshold = random.nextDouble(); // Generate a random threshold for each decision node
+            Node leftChild = full(depth - 1, random);
+            Node rightChild = full(depth - 1, random);
+            return new DecisionNode(decisionFeature, threshold, leftChild, rightChild, random);
+        }
+    }
+
+
+    public static Node createRandomNode(int depth, Random random) {
+        return random.nextBoolean() ? grow(depth, random) : full(depth, random);
     }
 }

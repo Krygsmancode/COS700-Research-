@@ -77,3 +77,7 @@ jlink {
 jlinkZip {
     group = 'distribution'
 }
+
+run {
+    standardInput = System.in
+}
