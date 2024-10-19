@@ -21,3 +21,4 @@
 # Logs and temporary files
 *.log
 *.tmp
+java_pid*.hprof
