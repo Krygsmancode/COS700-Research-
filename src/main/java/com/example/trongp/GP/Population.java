@@ -3,7 +3,9 @@ package com.example.trongp.GP;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.awt.Point;
 import java.util.HashSet;
@@ -17,39 +19,32 @@ public class Population {
     private boolean isSoloPhase;
     private int maxDepth;
     private double elitismRate;
-    private static int nextAgentId = 1;  // Static to ensure it is shared across instances
+    private int agentNumberForNewAgents; // New field to assign agent numbers
 
 
-    public Population(int size, int maxDepth, Random random, boolean isSoloPhase) {
+
+    public Population(int populationSize, int maxDepth, Random random, boolean isSoloPhase) {
         this.random = random;
         this.maxDepth = maxDepth;
-        this.agents = new ArrayList<>();
         this.elitismRate = GPParameters.elitismRate;
-    
         this.isSoloPhase = isSoloPhase;
-        for (int i = 0; i < size; i++) {
-            Strategy randomStrategy;
-            if (i < size / 2) {
-                randomStrategy = new Strategy(maxDepth, random, true); // Use full method
-            } else {
-                randomStrategy = new Strategy(maxDepth, random, false); // Use grow method
-            }
-            agents.add(new Agent(randomStrategy, nextAgentId++));
-            System.out.println("Agent #" + nextAgentId + " created with strategy: " + (i < size / 2 ? "full" : "grow"));
-
+        this.agentNumberForNewAgents = isSoloPhase ? 1 : -1; // -1 as placeholder for competitive phase
+        agents = new ArrayList<>();
+        for (int i = 0; i < populationSize; i++) {
+            Strategy strategy = new Strategy(maxDepth, random, true, !isSoloPhase); // isPhase2 = !isSoloPhase
+            Agent agent = new Agent(strategy, agentNumberForNewAgents);
+            agents.add(agent);
         }
-        
     }
-
-    public Population(List<Agent> agents, int maxDepth, Random random, boolean isSoloPhase) {
+    
+    
+    public Population(List<Agent> agents, int maxDepth, Random random, boolean isSoloPhase, int agentNumberForNewAgents) {
         this.random = random;
         this.maxDepth = maxDepth;
         this.agents = new ArrayList<>(agents);
         this.isSoloPhase = isSoloPhase;
         this.elitismRate = GPParameters.elitismRate;
-    
-        int maxId = agents.stream().mapToInt(Agent::getNumber).max().orElse(0);
-        this.nextAgentId = maxId + 1;
+        this.agentNumberForNewAgents = agentNumberForNewAgents;
     }
 
     public double calculateAverageTreeDistance() {
@@ -134,11 +129,15 @@ public class Population {
     }
 
     public void adjustDepth(int newMaxDepth) {
+        boolean isPhase2 = !this.isSoloPhase; // Determine current phase
         for (Agent agent : agents) {
-            agent.getStrategy().setMaxDepth(newMaxDepth);
-            agent.getStrategy().regenerateStrategy(newMaxDepth);  // Ensure the agent's strategy adheres to the new depth
+            Strategy strategy = agent.getStrategy();
+            strategy.setMaxDepth(newMaxDepth);
+            strategy.regenerateStrategy(newMaxDepth, isPhase2);  // Pass isPhase2 here
         }
     }
+    
+    
 
     public void setSoloPhase(boolean isSoloPhase) {
         this.isSoloPhase = isSoloPhase;
@@ -149,68 +148,61 @@ public class Population {
     }
 
     // Combined evaluation for both solo and competitive phases, based on isSoloPhase flag
-    public void evaluateFitness(Population opponentPopulation) {
+// In Population.java
+public void evaluateFitness(Population opponentPopulation) {
+    if (opponentPopulation == null) {
+        // Solo Phase
+        evaluateFitnessSolo();
+    } else {
+        // Competitive Phase
+        evaluateFitnessCompetitive(opponentPopulation);
+    }
+}
+
+public void evolve(Population opponentPopulation) {
+    List<Agent> newAgents = new ArrayList<>();
+    int eliteCount = (int) (elitismRate * agents.size());
+
+    // Sort agents by fitness in descending order
+    agents.sort(Comparator.comparingDouble(Agent::getFitness).reversed());
+
+    // Preserve elite agents
+    for (int i = 0; i < eliteCount; i++) {
+        Agent eliteAgent = agents.get(i).clone();
+        eliteAgent.setElite(true); // Mark the cloned agent as elite
+        newAgents.add(eliteAgent);
+    }
+
+    // Generate new offspring
+    while (newAgents.size() < agents.size()) {
+        Agent parent1 = selectAgent();
+        Agent parent2;
+        do {
+            parent2 = selectAgent();
+        } while (parent1 == parent2);
+
+        Strategy offspringStrategy = parent1.getStrategy().crossover(parent2.getStrategy(), maxDepth);
+        boolean isPhase2 = !isSoloPhase;
+
+        // Use increased mutation rate and adjusted feature selection in Phase 2
+        offspringStrategy.mutate(maxDepth);
+
+        Agent offspring = new Agent(offspringStrategy, agentNumberForNewAgents);
+        offspring.setElite(false);
+
+        // Evaluate offspring fitness
         if (isSoloPhase) {
-            evaluateFitnessSolo();  // Evaluates for the entire population
+            evaluateFitnessSoloForAgent(offspring);
         } else {
-            evaluateFitnessCompetitive(opponentPopulation);  // Evaluates for the entire population
+            evaluateFitnessCompetitiveForAgent(offspring, opponentPopulation);
         }
+
+        newAgents.add(offspring);
     }
-    
-    public void evolve(Population opponentPopulation) {
-        List<Agent> newAgents = new ArrayList<>();
-        int eliteCount = (int) (elitismRate * agents.size());
-    
-        // Sort agents by fitness in descending order
-        agents.sort(Comparator.comparingDouble(Agent::getFitness).reversed());
-    
-        // Preserve elite agents
-        System.out.println("Preserving top " + eliteCount + " elite agents.");
-        for (int i = 0; i < eliteCount; i++) {
-            Agent eliteAgent = agents.get(i).clone();
-            eliteAgent.setElite(true); // Mark the cloned agent as elite
-            newAgents.add(eliteAgent);
-            System.out.println("Elite Agent #" + eliteAgent.getNumber() + " Fitness: " + eliteAgent.getFitness() + " preserved.");
-        }
-    
-        // Generate new offspring
-        while (newAgents.size() < agents.size()) {
-            Agent parent1 = selectAgent();
-            Agent parent2;
-            do {
-                parent2 = selectAgent();
-            } while (parent1 == parent2);
-    
-            System.out.println("Selected Parents:");
-            System.out.println("  Parent1: Agent #" + parent1.getNumber() + " Fitness: " + parent1.getFitness());
-            System.out.println("  Parent2: Agent #" + parent2.getNumber() + " Fitness: " + parent2.getFitness());
-    
-            Strategy offspringStrategy = parent1.getStrategy().crossover(parent2.getStrategy(), maxDepth);
-            offspringStrategy.mutate(maxDepth);
-    
-            Agent offspring = new Agent(offspringStrategy, getNextAgentId());
-            offspring.setElite(false); // Explicitly mark new agents as not elite
-    
-            // Evaluate offspring fitness based on the current phase
-            if (isSoloPhase) {
-                evaluateFitnessSoloForAgent(offspring);
-            } else {
-                evaluateFitnessCompetitiveForAgent(offspring, opponentPopulation);
-            }
-    
-            newAgents.add(offspring);
-            System.out.println("New Offspring Agent #" + offspring.getNumber() + " created, Fitness: " + offspring.getFitness());
-        }
-    
-        agents = newAgents; // Replace old population with new one after all offspring are created
-    
-        // Debugging: Print fitness statistics after evolution
-        System.out.println("After evolution:");
-        System.out.println("  Best Fitness: " + getBestFitness());
-        System.out.println("  Mean Fitness: " + getMeanFitness());
-        System.out.println("  Fitness Variance: " + getFitnessVariance());
-        System.out.println("  Fitness Standard Deviation: " + getFitnessStandardDeviation());
-    }
+
+    agents = newAgents;
+}
+
     
     
     public void evaluateFitnessSolo() {
@@ -219,13 +211,19 @@ public class Population {
             if (!a.isElite()) {
                 evaluateFitnessSoloForAgent(a);
             }
+          //  applyFitnessSharing();
+
             analyzePopulationDynamics();
         }
     }
+    
     public void evaluateFitnessCompetitive(Population opponentPopulation) {
         for (Agent a : agents) {
             evaluateFitnessCompetitiveForAgent(a, opponentPopulation);
         }
+
+        //applyFitnessSharing();
+
     
         // Analyze population dynamics after fitness evaluation
         analyzePopulationDynamics();
@@ -237,98 +235,117 @@ public class Population {
         System.out.println("  Fitness Variance: " + getFitnessVariance());
         System.out.println("  Fitness Standard Deviation: " + getFitnessStandardDeviation());
     }
-    
-    private void evaluateFitnessCompetitiveForAgent(Agent agent, Population opponentPopulation) {
-        int wins = 0;
-        int draws = 0;
-        int losses = 0;
-        double totalTrailLength = 0.0;
-        double fitness = 0.0;
-    
-        for (int i = 0; i < GPParameters.GAMES_TO_PLAY; i++) {
-            Agent opponent = opponentPopulation.selectAgent();
-            GameState gameState = new GameState(GPParameters.GRID_SIZE, GPParameters.GRID_SIZE, false);
-    
-            int result = simulateCompetition(agent, opponent, gameState);
-    
-            if (result == 1) wins++;
-            else if (result == 0) draws++;
-            else if (result == -1) losses++;
-    
-            totalTrailLength += gameState.calculateTrailLength(agent);
+
+
+   private void evaluateFitnessCompetitiveForAgent(Agent agent, Population opponentPopulation) {
+    int wins = 0;
+    int draws = 0;
+    int losses = 0;
+    double totalTrailLength = 0.0;
+    double fitness = 0.0;
+
+    HandCraftedAgent handCraftedAgent = new HandCraftedAgent(2); // Assuming agent number 2
+
+
+    for (int i = 0; i < GPParameters.GAMES_TO_PLAY; i++) {
+        Agent opponent;
+
+        if (i % 2 == 0) {
+            // Every other game, play against the handcrafted agent
+            opponent = handCraftedAgent;
+        } else {
+            // Otherwise, select a random opponent from the opponent population
+            opponent = opponentPopulation.selectRandomAgent();
         }
-    
-        double winRate = (double) wins / GPParameters.GAMES_TO_PLAY;
-        double drawRate = (double) draws / GPParameters.GAMES_TO_PLAY;
-        double lossRate = (double) losses / GPParameters.GAMES_TO_PLAY;
-    
-        fitness += (winRate * GPParameters.WIN_WEIGHT);
-        fitness += (drawRate * GPParameters.DRAW_WEIGHT);
-        fitness -= (lossRate * GPParameters.LOSS_PENALTY * 0.5); // Reduce loss penalty
-        fitness += (totalTrailLength / GPParameters.GAMES_TO_PLAY) * GPParameters.TRAIL_WEIGHT;
-    
-        // Ensure fitness doesn't go negative
-        fitness = Math.max(fitness, 0.0);
-        agent.setFitness(fitness);
-    
-        // Debugging outputs
-        System.out.println("Agent #" + agent.getNumber() + " Competitive Fitness Calculated: " + fitness);
-        System.out.println("  Wins: " + wins);
-        System.out.println("  Draws: " + draws);
-        System.out.println("  Losses: " + losses);
-        System.out.println("  Average Trail Length: " + (totalTrailLength / GPParameters.GAMES_TO_PLAY));
-    }
-    
-    
-    private void evaluateFitnessSoloForAgent(Agent agent) {
-        GameState gameStateSolo = new GameState(GPParameters.SOLO_GRID_SIZE, GPParameters.SOLO_GRID_SIZE, true);
-        double initialFitness = agent.getFitness();
-        System.out.println("Starting Fitness Evaluation for Agent #" + agent.getNumber() + " Initial Fitness: " + initialFitness);
-    
-        int steps = 0;
-        double fitness = 0.0;
-        boolean hitWall = false;
-        Set<Point> uniqueCellsVisited = new HashSet<>();
-    
-        while (!gameStateSolo.isGameOver()) {
-            int move = agent.makeMove(gameStateSolo, 1);
-          //  System.out.println("Agent #" + agent.getNumber() + " makes move " + move + " at step " + steps);
-            gameStateSolo.update(move, -1);  // Ensure this method's logic is correct
-            steps++;
-    
-            if (gameStateSolo.hasCollisionOccurred()) {
-                hitWall = true;
-          //      System.out.println("Collision Detected for Agent #" + agent.getNumber() + " at step " + steps);
-                break;
-            }
-    
-            // Assuming unique cell visits increase fitness
-            int agentX = (int) gameStateSolo.getAgent1X();
-            int agentY = (int) gameStateSolo.getAgent1Y();
-            Point currentPosition = new Point(agentX, agentY);
-            if (uniqueCellsVisited.add(currentPosition)) {
-                fitness += GPParameters.EXPLORATION_WEIGHT;
-          //      System.out.println("Agent #" + agent.getNumber() + " explores new cell at (" + agentX + ", " + agentY + "), Incremental Fitness: " + GPParameters.EXPLORATION_WEIGHT);
-            } else {
-                fitness -= GPParameters.REVISIT_PENALTY_WEIGHT;
-          //      System.out.println("Agent #" + agent.getNumber() + " revisits cell at (" + agentX + ", " + agentY + "), Penalty Applied: " + GPParameters.REVISIT_PENALTY_WEIGHT);
-            }
-        }
-    
-        // Collision penalties
-        if (hitWall) {
         
-            fitness -= GPParameters.LOSS_PENALTY * (GPParameters.SOLO_MAX_STEPS - steps);
-      //      System.out.println("Wall Hit Penalty Applied for Agent #" + agent.getNumber() + ", Penalty: " + (GPParameters.LOSS_PENALTY * (GPParameters.SOLO_MAX_STEPS - steps)));
+        // Initialize a new game state with agents randomly placed
+        GameState gameState = new GameState(GPParameters.GRID_SIZE, GPParameters.GRID_SIZE, false);
+        
+        // Reset the game to ensure random starting positions
+        gameState.reset();
+        
+        // Run the game simulation
+        int result = simulateCompetition(agent, opponent, gameState);
+        
+        // Track results (wins, losses, draws)
+        if (result == 1) {
+            wins++;
+        } else if (result == 0) {
+            draws++;
+        } else if (result == -1) {
+            losses++;
         }
-    
-        fitness = Math.max(fitness, 0.0);
-        agent.setFitness(fitness);
-        System.out.println("Completed Fitness Evaluation for Agent #" + agent.getNumber() + " Final Fitness: " + fitness);
+
+        // Calculate trail length
+        totalTrailLength += gameState.calculateTrailLength(agent);
     }
+
+    // Calculate fitness based on game outcomes and trail length
+    double winRate = (double) wins / GPParameters.GAMES_TO_PLAY;
+    double drawRate = (double) draws / GPParameters.GAMES_TO_PLAY;
+    double lossRate = (double) losses / GPParameters.GAMES_TO_PLAY;
+
+    fitness += (winRate * GPParameters.WIN_WEIGHT);
+    fitness += (drawRate * GPParameters.DRAW_WEIGHT);
+    fitness -= (lossRate * GPParameters.LOSS_PENALTY);
+    if (wins > 0) {
+        fitness += (totalTrailLength / wins) * GPParameters.TRAIL_WEIGHT;
+    }
+    // Ensure fitness doesn't go negative
+    fitness = Math.max(fitness, 0.0);
+    agent.setFitness(fitness);
     
-    
-    
+    // Debugging output
+    System.out.println("Agent #" + agent.getNumber() + " Competitive Fitness Calculated: " + fitness);
+}
+private void evaluateFitnessSoloForAgent(Agent agent) {
+    GameState gameStateSolo = new GameState(GPParameters.SOLO_GRID_SIZE, GPParameters.SOLO_GRID_SIZE, true);
+    double initialFitness = agent.getFitness();
+    System.out.println("Starting Fitness Evaluation for Agent #" + agent.getNumber() + " Initial Fitness: " + initialFitness);
+
+    int steps = 0;
+    double fitness = 0.0;
+    boolean hitWall = false;
+    Set<Point> uniqueCellsVisited = new HashSet<>();
+
+    while (!gameStateSolo.isGameOver()) {
+        int move = agent.makeMove(gameStateSolo, 1);
+        gameStateSolo.update(move, -1);  // Ensure this method's logic is correct
+        steps++;
+
+        if (gameStateSolo.hasCollisionOccurred()) {
+            hitWall = true;
+            break;
+        }
+
+        // Assuming unique cell visits increase fitness
+        int agentX = (int) gameStateSolo.getAgent1X();
+        int agentY = (int) gameStateSolo.getAgent1Y();
+        Point currentPosition = new Point(agentX, agentY);
+        uniqueCellsVisited.add(currentPosition);
+    }
+
+    // Calculate grid coverage
+    int totalCells = GPParameters.SOLO_GRID_SIZE * GPParameters.SOLO_GRID_SIZE;
+    double coverage = (double) uniqueCellsVisited.size() / totalCells;
+
+    // Apply grid coverage reward
+    fitness += coverage * GPParameters.FULL_GRID_BONUS;  // FULL_GRID_BONUS to be defined in GPParameters
+
+    // Apply exploration and revisiting penalties
+    fitness += uniqueCellsVisited.size() * GPParameters.EXPLORATION_WEIGHT;
+    fitness -= (steps - uniqueCellsVisited.size()) * GPParameters.REVISIT_PENALTY_WEIGHT;
+
+    // Collision penalties
+    if (hitWall) {
+        fitness -= GPParameters.LOSS_PENALTY * (GPParameters.SOLO_MAX_STEPS - steps);
+    }
+
+    fitness = Math.max(fitness, 0.0);
+    agent.setFitness(fitness);
+    System.out.println("Completed Fitness Evaluation for Agent #" + agent.getNumber() + " Final Fitness: " + fitness);
+}
+
     
     
     private double calculateExplorationBonus(GameState gameState, Agent agent) {
@@ -385,8 +402,12 @@ public class Population {
     }
     private int simulateCompetition(Agent agent1, Agent agent2, GameState gameState) {
         // Clone agents and assign agent numbers 1 and 2
-        Agent redAgent = agent1.cloneWithNewNumber(1);
-        Agent blueAgent = agent2.cloneWithNewNumber(2);
+        Agent redAgent = (agent1 instanceof HandCraftedAgent) ? agent1 : agent1.cloneWithNewNumber(1);
+        Agent blueAgent = (agent2 instanceof HandCraftedAgent) ? agent2 : agent2.cloneWithNewNumber(2);
+        
+        // Print decision trees for both agents before the competition begins
+        // System.out.println("Agent #" + redAgent.getNumber() + " Decision Tree:\n" + redAgent.getStrategy().getRoot().toString());
+        // System.out.println("Agent #" + blueAgent.getNumber() + " Decision Tree:\n" + blueAgent.getStrategy().getRoot().toString());
     
         while (!gameState.isGameOver()) {
             int move1 = redAgent.makeMove(gameState, redAgent.getNumber());
@@ -396,24 +417,64 @@ public class Population {
             System.out.println("Agent #" + redAgent.getNumber() + " Move: " + move1);
             System.out.println("Agent #" + blueAgent.getNumber() + " Move: " + move2);
     
+            // Update the game state with both moves
             gameState.update(move1, move2);
         }
     
+        // Determine who won or lost based on the final game state
         if (gameState.didAgentWin(redAgent)) {
-            System.out.println("Agent #" + redAgent.getNumber() + " wins the game.");
-            return 1;
+            return 1; // Red agent wins
         } else if (gameState.didAgentWin(blueAgent)) {
-            System.out.println("Agent #" + blueAgent.getNumber() + " wins the game.");
-            return -1;
+            return -1; // Blue agent wins
         } else {
-            System.out.println("Game ended in a draw.");
-            return 0;
+            // Handle edge cases where no clear winner is decided (e.g., both agents collide)
+            System.out.println("Game over with no clear winner. Resolving based on remaining safe moves.");
+    
+            // Check if agents have safe moves left to decide the winner
+            boolean redHasMoves = hasSafeMoves(gameState, redAgent);
+            boolean blueHasMoves = hasSafeMoves(gameState, blueAgent);
+    
+            if (redHasMoves && !blueHasMoves) {
+                return 1; // Red agent wins by having more safe moves
+            } else if (!redHasMoves && blueHasMoves) {
+                return -1; // Blue agent wins by having more safe moves
+            } else {
+                return 1; // Agent 1 wins by default if both are tied
+            }
         }
-                                        
     }
     
+    
+    private boolean hasSafeMoves(GameState gameState, Agent agent) {
+        // Get the current position of the agent
+        java.awt.Point currentPosition = gameState.getCurrentPosition(agent.getNumber());
+    
+        if (currentPosition == null) {
+            System.out.println("Error: Agent #" + agent.getNumber() + " does not have a valid current position.");
+            return false;
+        }
+    
+        // Loop through all possible moves (0: up, 1: down, 2: left, 3: right)
+        for (int move = 0; move < 4; move++) {
+            com.example.trongp.Point nextPosition = agent.getNextPosition(currentPosition.x, currentPosition.y, move);
+            
+            // Check if the next position is safe
+            if (nextPosition != null && gameState.isPositionSafe(nextPosition.x, nextPosition.y)) {
+                // Safe move found
+                return true;
+            }
+        }
+        
+        // No safe moves found
+        return false;
+    }
 
-
+    private Agent selectRandomAgent() {
+        return agents.get(random.nextInt(agents.size()));
+    }
+    
+    
+    
 
     private Agent selectAgent() {
         List<Agent> tournament = new ArrayList<>();
@@ -433,6 +494,31 @@ public class Population {
         return agents.size();
        
     }
+
+    // In Population.java, during fitness evaluation
+private void applyFitnessSharing() {
+    for (Agent agent : agents) {
+        double sharedFitness = agent.getFitness() / (1 + countSimilarAgents(agent));
+        agent.setFitness(sharedFitness);
+    }
+}
+
+private int countSimilarAgents(Agent targetAgent) {
+    int count = 0;
+    for (Agent agent : agents) {
+        if (agent != targetAgent && isSimilar(agent, targetAgent)) {
+            count++;
+        }
+    }
+    return count;
+}
+
+private boolean isSimilar(Agent agent1, Agent agent2) {
+    // Define similarity based on strategy tree distance or behavior
+    int distance = agent1.getStrategy().calculateTreeDistance(agent2.getStrategy());
+    return distance < GPParameters.SIMILARITY_THRESHOLD;
+}
+
 
     public double getMeanFitness() {
         double totalFitness = 0.0;
@@ -463,14 +549,39 @@ public class Population {
         return getBestAgent().getFitness();
     }
 
-    private double calculateDynamicRate(double initialRate, double finalRate, int currentGeneration, int totalGenerations) {
-        return initialRate + (finalRate - initialRate) * ((double) currentGeneration / totalGenerations);
+    public Map<Integer, Integer> getFeatureUsageCounts() {
+    Map<Integer, Integer> featureCounts = new HashMap<>();
+
+    for (Agent agent : agents) {
+        traverseTreeAndCountFeatures(agent.getStrategy().getRoot(), featureCounts);
     }
 
+    return featureCounts;
+}
 
+private void traverseTreeAndCountFeatures(Node node, Map<Integer, Integer> featureCounts) {
+    if (node instanceof DecisionNode) {
+        DecisionNode decisionNode = (DecisionNode) node;
+        int featureIndex = decisionNode.decisionFeature;
+        featureCounts.put(featureIndex, featureCounts.getOrDefault(featureIndex, 0) + 1);
 
-    public static int getNextAgentId() {
-        return nextAgentId++;
+        traverseTreeAndCountFeatures(decisionNode.left, featureCounts);
+        traverseTreeAndCountFeatures(decisionNode.right, featureCounts);
     }
+}
+
+
+
+
+
+public List<Agent> getTopNAgents(int n) {
+    // Sort agents by fitness in descending order
+    agents.sort(Comparator.comparingDouble(Agent::getFitness).reversed());
+    // Return the top N agents
+    return new ArrayList<>(agents.subList(0, Math.min(n, agents.size())));
+}
+
+
+
     
 }

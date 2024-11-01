@@ -6,10 +6,17 @@ import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.plot.CategoryPlot;
+import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.renderer.category.BarRenderer;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import java.awt.Color;
+import java.util.Map;
+
 import javax.swing.JFrame;
+
+import org.jfree.data.category.DefaultCategoryDataset;
 import org.jfree.data.statistics.Regression;
 import org.jfree.data.xy.XYDataItem;
 
@@ -21,6 +28,8 @@ public class FitnessPlotter {
     private ChartPanel chartPanelPhase1;
     private JFrame framePhase1;
     private XYSeries phase1VarianceSeries;
+    private XYSeries phase1BestFitnessSeries;
+    private XYSeries phase1MeanFitnessSeries;
 
 
     // Phase 2 variables
@@ -39,16 +48,19 @@ public class FitnessPlotter {
     private ChartPanel chartPanelPhase2;
     private JFrame framePhase2;
 
+
+
     public FitnessPlotter() {
         // Phase 1 initialization
-        phase1Series = new XYSeries("Best Fitness");
+        phase1BestFitnessSeries = new XYSeries("Best Fitness");
+        phase1MeanFitnessSeries = new XYSeries("Mean Fitness");  // Initialize new series
         phase1VarianceSeries = new XYSeries("Fitness Variance");
         
         datasetPhase1 = new XYSeriesCollection();
-        datasetPhase1.addSeries(phase1Series);
+        datasetPhase1.addSeries(phase1BestFitnessSeries);
+        datasetPhase1.addSeries(phase1MeanFitnessSeries);  // Add to dataset
         datasetPhase1.addSeries(phase1VarianceSeries);
     
-        // Create the chart after the dataset is fully prepared
         chartPhase1 = ChartFactory.createXYLineChart(
                 "Phase 1 Fitness Over Generations",
                 "Generation",
@@ -62,7 +74,8 @@ public class FitnessPlotter {
     
         XYLineAndShapeRenderer rendererPhase1 = new XYLineAndShapeRenderer();
         rendererPhase1.setSeriesPaint(0, Color.GREEN); // Best Fitness
-        rendererPhase1.setSeriesPaint(1, Color.ORANGE); // Fitness Variance
+        rendererPhase1.setSeriesPaint(1, Color.BLUE);  // Mean Fitness
+        rendererPhase1.setSeriesPaint(2, Color.ORANGE); // Fitness Variance
         plotPhase1.setRenderer(rendererPhase1);
     
         chartPanelPhase1 = new ChartPanel(chartPhase1);
@@ -125,10 +138,11 @@ public class FitnessPlotter {
     }
     
 
-    // Method to update Phase 1 plot
     public void updatePhase1Plot(int generation, double bestFitness, double meanFitness, double variance) {
-        phase1Series.add(generation, bestFitness);
+        phase1BestFitnessSeries.add(generation, bestFitness);
+        phase1MeanFitnessSeries.add(generation, meanFitness);  // Update mean fitness series
         phase1VarianceSeries.add(generation, variance);
+
         framePhase1.revalidate();
         framePhase1.repaint();
     }
@@ -174,4 +188,36 @@ framePhase2.repaint();
         regressionSeries.add(startX, slope * startX + intercept);
         regressionSeries.add(endX, slope * endX + intercept);
     }
+
+public void plotFeatureUsageHeatmap(Map<Integer, Integer> featureCounts, String title) {
+    DefaultCategoryDataset dataset = new DefaultCategoryDataset();
+
+    for (Map.Entry<Integer, Integer> entry : featureCounts.entrySet()) {
+        int featureIndex = entry.getKey();
+        int count = entry.getValue();
+        dataset.addValue(count, "Usage", "Feature " + featureIndex);
+    }
+
+    JFreeChart barChart = ChartFactory.createBarChart(
+            title,
+            "Features",
+            "Usage Count",
+            dataset,
+            PlotOrientation.VERTICAL,
+            false, true, false);
+
+    // Optional: Customize the bar chart
+    CategoryPlot plot = barChart.getCategoryPlot();
+    BarRenderer renderer = (BarRenderer) plot.getRenderer();
+    renderer.setSeriesPaint(0, Color.BLUE);
+
+    ChartPanel chartPanel = new ChartPanel(barChart);
+    JFrame frame = new JFrame(title);
+    frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE); // So it doesn't exit the application
+    frame.setContentPane(chartPanel);
+    frame.pack();
+    frame.setVisible(true);
+}
+
+    
 }

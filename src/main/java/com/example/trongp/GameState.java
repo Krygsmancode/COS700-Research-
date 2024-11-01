@@ -54,25 +54,21 @@ public class GameState {
     
     
     private void initAgents() {
-        // Initialize agent positions and trails dynamically
-        agentTrails.put(1, new ArrayList<>());
-        agentTrails.put(2, new ArrayList<>());
-    
-        // Initialize agent 1
-        agent1X = random.nextInt(getWidth());
-        agent1Y = random.nextInt(getHeight());
+        // Fixed starting positions for both agents
+        // Agent 1 starts at top-left corner
+        agent1X = 0;
+        agent1Y = 0;
         grid[agent1Y][agent1X] = 1;
         agentTrails.get(1).add(new Point(agent1X, agent1Y));
     
-        // Initialize agent 2 at a different position
-        do {
-            agent2X = random.nextInt(getWidth());
-            agent2Y = random.nextInt(getHeight());
-        } while ((agent2X == agent1X && agent2Y == agent1Y) || grid[agent2Y][agent2X] != 0);
-    
+        // Agent 2 starts at bottom-right corner
+        agent2X = getWidth() - 1;
+        agent2Y = getHeight() - 1;
         grid[agent2Y][agent2X] = 2;
         agentTrails.get(2).add(new Point(agent2X, agent2Y));
     }
+    
+    
     
     
     public Point getNextPosition(int x, int y, int move) {
@@ -117,85 +113,95 @@ public class GameState {
     }
     
     
-    
-    
     public void update(int agent1Move, int agent2Move) {
+        Random random = new Random(); // Random object for making decisions
+    
         if (gameOver) {
             System.out.println("Game is over. No update required.");
             displayGridCoverage(); // Display grid coverage when the game is over
             return; // Exit the method if the game is over
         }
-        if (!gameOver) {
-            // Log current positions
-            System.out.println("Agent 1 Position: (" + agent1X + "," + agent1Y + ")");
-            if (!soloMode) {
-                System.out.println("Agent 2 Position: (" + agent2X + "," + agent2Y + ")");
-            }
-
-            if (agent1Move == -1) {
-                System.out.println("Agent 1 has no valid moves. Game over.");
+    
+        // Log current positions
+        System.out.println("Agent 1 Position: (" + agent1X + "," + agent1Y + ")");
+        if (!soloMode) {
+            System.out.println("Agent 2 Position: (" + agent2X + "," + agent2Y + ")");
+        }
+    
+        if (agent1Move == -1) {
+            System.out.println("Agent 1 has no valid moves. Game over.");
+            gameOver = true;
+            agent1Wins = false;
+            agent2Wins = !soloMode;
+            displayGridCoverage();
+            return;
+        }
+    
+        // Agent 1's turn
+        Point agent1NextPosition = getNextPosition(agent1X, agent1Y, agent1Move);
+        if (agent1NextPosition == null) {
+            System.out.println("Agent 1 made an invalid move. Game over.");
+            gameOver = true;
+            agent1Wins = false;
+            agent2Wins = !soloMode;
+            displayGridCoverage();
+            return;
+        }
+        boolean agent1Collision = checkCollision(agent1NextPosition);
+    
+        if (agent1Collision) {
+            gameOver = true;
+            agent1Wins = false;
+            agent2Wins = !soloMode; // In solo mode, agent2Wins should be false
+            System.out.println("Agent 1 collided.");
+            displayGridCoverage(); // Display grid coverage when the game is over
+            return;
+        } else {
+            updateAgentPosition(1, agent1NextPosition);
+            agentTrails.get(1).add(new Point(agent1X, agent1Y));
+        }
+    
+        if (!soloMode) {
+            // Agent 2's turn
+            if (agent2Move == -1) {
+                System.out.println("Agent 2 has no valid moves. Game over.");
                 gameOver = true;
-                agent1Wins = false;
-                agent2Wins = !soloMode;
+                agent1Wins = true;
+                agent2Wins = false;
                 displayGridCoverage();
                 return;
             }
     
-            // Agent 1's turn
-            Point agent1NextPosition = getNextPosition(agent1X, agent1Y, agent1Move);
-            if (agent1NextPosition == null) {
-                System.out.println("Agent 1 made an invalid move. Game over.");
+            Point agent2NextPosition = getNextPosition(agent2X, agent2Y, agent2Move);
+            boolean agent2Collision = checkCollision(agent2NextPosition);
+    
+            System.out.println("Agent 2 intends to move to: (" + agent2NextPosition.x + "," + agent2NextPosition.y + ")");
+            System.out.println("Agent 2 Collision: " + agent2Collision);
+    
+            if (agent1NextPosition.equals(agent2NextPosition)) {
                 gameOver = true;
-                agent1Wins = false;
-                agent2Wins = !soloMode;
-                displayGridCoverage();
-                return;
-            }
-            boolean agent1Collision = checkCollision(agent1NextPosition);
-    
-       //     System.out.println("Agent 1 intends to move to: (" + agent1NextPosition.x + "," + agent1NextPosition.y + ")");
-       //     System.out.println("Agent 1 Collision: " + agent1Collision);
-    
-            if (agent1Collision) {
-                gameOver = true;
-                agent1Wins = false;
-                agent2Wins = !soloMode; // In solo mode, agent2Wins should be false
-                System.out.println("Agent 1 collided.");
-                displayGridCoverage(); // Display grid coverage when the game is over
-                return;
-            } else {
-                updateAgentPosition(1, agent1NextPosition);
-                agentTrails.get(1).add(new Point(agent1X, agent1Y));
-            }
-    
-            if (!soloMode) {
-                // Agent 2's turn
-                Point agent2NextPosition = getNextPosition(agent2X, agent2Y, agent2Move);
-                boolean agent2Collision = checkCollision(agent2NextPosition);
-    
-                System.out.println("Agent 2 intends to move to: (" + agent2NextPosition.x + "," + agent2NextPosition.y + ")");
-                System.out.println("Agent 2 Collision: " + agent2Collision);
-    
-                // Check if agent 2 moves into agent 1's new position
-                if (agent2NextPosition.equals(new Point(agent1X, agent1Y))) {
-                    gameOver = true;
-                    agent1Wins = false;
-                    agent2Wins = false; // Both agents collide
-                    System.out.println("Agents collided with each other.");
-                    displayGridCoverage(); // Display grid coverage when the game is over
-                    return;
-                }
-    
-                if (agent2Collision) {
-                    gameOver = true;
+                if (random.nextBoolean()) { // Randomly choose the winning agent
                     agent1Wins = true;
                     agent2Wins = false;
-                    System.out.println("Agent 2 collided.");
-                    displayGridCoverage(); // Display grid coverage when the game is over
+                    System.out.println("Agents collided with each other. Random winner: Agent 1.");
                 } else {
-                    updateAgentPosition(2, agent2NextPosition);
-                    agentTrails.get(2).add(new Point(agent2X, agent2Y));
+                    agent1Wins = false;
+                    agent2Wins = true;
+                    System.out.println("Agents collided with each other. Random winner: Agent 2.");
                 }
+                displayGridCoverage(); // Display grid coverage when the game is over
+                return;
+            }
+    
+            if (agent2Collision) {
+                gameOver = true;
+                agent1Wins = true;
+                agent2Wins = false;
+                System.out.println("Agent 2 collided.");
+                displayGridCoverage(); // Display grid coverage when the game is over
+            } else {
+                updateAgentPosition(2, agent2NextPosition);
+                agentTrails.get(2).add(new Point(agent2X, agent2Y));
             }
         }
     
@@ -230,9 +236,19 @@ public class GameState {
                 if (cellValue == 0) {
                     displayChar = '.'; // Open space
                 } else if (cellValue == 1) {
-                    displayChar = 'R'; // Red agent trail
+                    // Check if this cell is the current position of agent 1
+                    if (x == agent1X && y == agent1Y) {
+                        displayChar = 'A'; // Current position of agent 1
+                    } else {
+                        displayChar = 'R'; // Trail left by agent 1
+                    }
                 } else if (cellValue == 2) {
-                    displayChar = 'B'; // Blue agent trail
+                    // Check if this cell is the current position of agent 2
+                    if (x == agent2X && y == agent2Y) {
+                        displayChar = 'B'; // Current position of agent 2
+                    } else {
+                        displayChar = 'S'; // Trail left by agent 2
+                    }
                 } else {
                     displayChar = '?'; // Unexpected value
                 }
@@ -241,7 +257,6 @@ public class GameState {
             System.out.println();
         }
     }
-    
     
 
     private void updateAgentPosition(int agentNumber, Point pos) {
@@ -332,13 +347,11 @@ public class GameState {
     }
     public boolean isPositionSafe(int x, int y) {
         if (x >= 0 && x < getWidth() && y >= 0 && y < getHeight()) {
-            boolean safe = grid[y][x] == 0;
-    //        System.out.println("Position (" + x + ", " + y + ") is " + (safe ? "Safe" : "Blocked"));
-            return safe;
+            return grid[y][x] == 0;
         }
-    //    System.out.println("Position (" + x + ", " + y + ") is Out of Bounds");
         return false;
     }
+    
     
     
     
@@ -393,6 +406,17 @@ public class GameState {
         } else {
             initAgents();
         }
+    }
+    public boolean isFullGridCovered() {
+        for (int y = 0; y < grid.length; y++) {
+            for (int x = 0; x < grid[y].length; x++) {
+                // Assuming 0 indicates an empty cell (no agent presence)
+                if (grid[y][x] == 0) {
+                    return false; // If any cell is empty, the grid is not fully covered
+                }
+            }
+        }
+        return true; // All cells are covered if no empty cell was found
     }
 
  

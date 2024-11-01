@@ -6,36 +6,39 @@ import java.util.Random;
 public class Strategy implements Cloneable {
     private Node root;
     private Random random;
-
+    private boolean isPhase2; 
 
 
     
 
-    public Strategy(Node root, Random random) {
+    public Strategy(Node root, Random random, boolean isPhase2) {
         this.root = root;
         this.random = random;
+        this.isPhase2 = isPhase2;
+
     }
 
     public Strategy crossover(Strategy other, int maxDepth, double crossoverRate) {
         Random rand = new Random();
         if (rand.nextDouble() < crossoverRate) {
-            // Perform crossover logic
+            return this.crossover(other, maxDepth);
         }
         // If crossover does not happen, return a clone of one parent
         return this.clone();
     }
-    
-    public Strategy(int maxDepth, Random random, boolean useFullMethod) {
-        this.random = random;
-        if (useFullMethod) {
-            this.root = NodeFactory.full(maxDepth, random);
-        } else {
-            this.root = NodeFactory.grow(maxDepth, random);
-        }
-        if (this.getMaxDepth() > maxDepth) {
-            System.err.println("Error: Created strategy exceeds max depth!");
-        }
+
+// In Strategy.java
+public Strategy(int maxDepth, Random random, boolean useFullMethod, boolean isPhase2) {
+    this.random = random;
+    this.isPhase2 = isPhase2;
+    if (useFullMethod) {
+        this.root = NodeFactory.full(maxDepth, random, isPhase2);
+    } else {
+        this.root = NodeFactory.grow(maxDepth, random, isPhase2);
     }
+}
+
+    
 
     public int calculateTreeDistance(Strategy other) {
         return calculateNodeDistance(this.root, other.getRoot());
@@ -91,18 +94,18 @@ public class Strategy implements Cloneable {
     }
 
 
-
     public Strategy crossover(Strategy other, int maxDepth) {
         Node newRoot = crossoverNodes(this.root, other.getRoot());
         if (newRoot == null) {
-            return new Strategy(this.root.clone(), this.random);
+            return this.clone();
         }
-        Strategy offspring = new Strategy(newRoot, this.random);
+        Strategy offspring = new Strategy(newRoot, this.random, this.isPhase2); // Pass isPhase2
         if (offspring.getMaxDepth() > maxDepth) {
             offspring.prune(maxDepth);
-        }        
+        }
         return offspring;
     }
+    
 
     public void prune(int maxDepth) {
         this.root = pruneNode(this.root, maxDepth);
@@ -154,14 +157,18 @@ public class Strategy implements Cloneable {
         return one != null ? one : two;
     }
 
-    public void mutate(int maxDepth) {
-        root.mutate();
-        if (getMaxDepth() > maxDepth) {
-            prune(maxDepth);
-        }
+// In Strategy.java
+public void mutate(int maxDepth) {
+
+    root.mutate(isPhase2);
+    if (getMaxDepth() > maxDepth) {
+        prune(maxDepth);
+    } else {
+        // Allow tree to grow if depth is less than maxDepth
+        expandTree(root, maxDepth - getMaxDepth(), isPhase2);
     }
-    
-    
+}
+
 
     public int getMaxDepth() {
         return root.getMaxDepth();
@@ -175,10 +182,12 @@ public class Strategy implements Cloneable {
         this.root = root;
     }
 
-
-    public void regenerateStrategy(int newMaxDepth) {
-        this.root = NodeFactory.createRandomNode(newMaxDepth, random);
+    public void regenerateStrategy(int newMaxDepth, boolean isPhase2) {
+        this.isPhase2 = isPhase2;  // Update the phase state
+        this.root = NodeFactory.createRandomNode(newMaxDepth, random, isPhase2);
     }
+    
+    
 
     // @Override
     // public Strategy clone() {
@@ -193,13 +202,77 @@ public class Strategy implements Cloneable {
     // }
 
     @Override
-public Strategy clone() {
-    return new Strategy(this.root.clone(), this.random);
-}
+    public Strategy clone() {
+        Strategy clonedStrategy = new Strategy(this.root.clone(), this.random, this.isPhase2);
+        return clonedStrategy;
+    }
+    
+    
+    
   
 public Node getRootNode() {
     return root; // Return the root of the decision tree
 }
+
+public void adjustTreeDepth(int newMaxDepth) {
+    if (getMaxDepth() < newMaxDepth) {
+        expandTree(root, newMaxDepth - getMaxDepth(), isPhase2);
+    }
+}
+
+
+private void expandTree(Node node, int depthToAdd, boolean isPhase2) {
+    if (depthToAdd <= 0) {
+        return;
+    }
+    if (node instanceof ActionNode) {
+        // Replace ActionNode with DecisionNode
+        Node leftChild = new ActionNode(random);
+        Node rightChild = new ActionNode(random);
+        int decisionFeature = NodeFactory.selectFeatureIndex(random, isPhase2); // Call static method from NodeFactory
+        double threshold = random.nextDouble();
+        DecisionNode newNode = new DecisionNode(decisionFeature, threshold, leftChild, rightChild, random);
+        // Replace node
+        if (node == root) {
+            root = newNode;
+        } else {
+            // Find and replace in the tree
+            replaceNode(root, node, newNode);
+        }
+        // Recursively expand
+        expandTree(newNode.left, depthToAdd - 1, isPhase2);
+        expandTree(newNode.right, depthToAdd - 1, isPhase2);
+    } else if (node instanceof DecisionNode) {
+        DecisionNode decisionNode = (DecisionNode) node;
+        expandTree(decisionNode.left, depthToAdd - 1, isPhase2);
+        expandTree(decisionNode.right, depthToAdd - 1, isPhase2);
+    }
+}
+
+
+
+
+
+
+
+private void replaceNode(Node parent, Node oldNode, Node newNode) {
+    if (parent instanceof DecisionNode) {
+        DecisionNode decisionNode = (DecisionNode) parent;
+        if (decisionNode.left == oldNode) {
+            decisionNode.left = newNode;
+        } else if (decisionNode.right == oldNode) {
+            decisionNode.right = newNode;
+        } else {
+            replaceNode(decisionNode.left, oldNode, newNode);
+            replaceNode(decisionNode.right, oldNode, newNode);
+        }
+    }
+}
+
+public void setPhase(boolean b) {
+    isPhase2 = b;
+}
+
 
 
 }

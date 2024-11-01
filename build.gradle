@@ -78,6 +78,12 @@ jlinkZip {
     group = 'distribution'
 }
 
+tasks.withType(JavaExec) {
+    jvmArgs = ['-Xmx8G', '-Xms4G']  // Increase maximum memory to 8GB and initial memory to 4GB
+}
+
+
+
 run {
     standardInput = System.in
 }

@@ -1,36 +1,22 @@
 package com.example.trongp;
 
 import java.io.IOException;
-import java.util.Random;
-
-import com.example.trongp.GP.Agent;
-import com.example.trongp.GP.EvolutionEngine;
-import com.example.trongp.GP.GPParameters;
 
 public class TronGameApp {
     public static void main(String[] args) {
+        // Create an instance of the ParameterOptimizer
+        ParameterOptimizer optimizer = new ParameterOptimizer();
 
-        EvolutionEngine engine = new EvolutionEngine(
-            GPParameters.POPULATION_SIZE,
-            GPParameters.GENERATIONS
+        // Define the number of trials for optimization
+        int numberOfTrials = 50; // Adjust this number based on how extensive you want the search to be
 
-        );
-        engine.runEvolution();
+        // Run the parameter optimization process
+        optimizer.optimizeParameters(numberOfTrials);
 
-        // Get the best agents after evolution
-        Agent bestRedAgent = engine.getBestRedAgent();
-        Agent bestBlueAgent = engine.getBestBlueAgent();
+        // The optimizer now handles the evolution and saving of results internally
+        // Any further code here can be for final clean-up or additional logging if necessary
 
-
-
-        // Save the results using CSVSaver
-        try (CSVSaver csvSaver = new CSVSaver("results.csv")) {
-            csvSaver.saveRun(bestRedAgent, bestBlueAgent);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        // Keep the application running until the user closes the graph windows
+        // Keep the application running if necessary (for GUIs or other reasons)
         try {
             Thread.currentThread().join();
         } catch (InterruptedException e) {

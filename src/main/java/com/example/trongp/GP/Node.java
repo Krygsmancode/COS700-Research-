@@ -14,7 +14,7 @@ public abstract class Node {
 
     public abstract int evaluate(GameState gameState, int agentNumber);
     public abstract Node crossover(Node other);
-    public abstract void mutate();
+    public abstract void mutate(boolean isPhase2); 
     public abstract String toString();
 
     public int getMaxDepth() {

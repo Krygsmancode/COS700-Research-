@@ -3,32 +3,62 @@ package com.example.trongp.GP;
 import java.util.Random;
 
 public class NodeFactory {
-    public static Node grow(int depth, Random random) {
-        if (depth <= 2) {
+
+    public static Node grow(int maxDepth, Random random, boolean isPhase2) {
+        if (maxDepth <= 0) {
+            // Return a terminal node
             return new ActionNode(random);
         } else {
-            int decisionFeature = random.nextInt(DecisionNode.NUM_FEATURES); // Adjusted if you have a specific number of features
-            double threshold = random.nextDouble(); // Generate a random threshold
-            Node leftChild = grow(depth - 1, random);
-            Node rightChild = grow(depth - 1, random);
+            boolean chooseTerminal = random.nextBoolean();
+            if (chooseTerminal) {
+                return new ActionNode(random);
+            } else {
+                int decisionFeature = selectFeatureIndex(random, isPhase2);
+                double threshold = random.nextDouble();
+                Node leftChild = grow(maxDepth - 1, random, isPhase2);
+                Node rightChild = grow(maxDepth - 1, random, isPhase2);
+                return new DecisionNode(decisionFeature, threshold, leftChild, rightChild, random);
+            }
+        }
+    }
+    
+    public static Node full(int maxDepth, Random random, boolean isPhase2) {
+        if (maxDepth <= 0) {
+            // Return a terminal node
+            return new ActionNode(random);
+        } else {
+            int decisionFeature = selectFeatureIndex(random, isPhase2);
+            double threshold = random.nextDouble();
+            Node leftChild = full(maxDepth - 1, random, isPhase2);
+            Node rightChild = full(maxDepth - 1, random, isPhase2);
             return new DecisionNode(decisionFeature, threshold, leftChild, rightChild, random);
         }
     }
-
-    public static Node full(int depth, Random random) {
-        if (depth <= 2) {
-            return new ActionNode(random);
+    
+    static int selectFeatureIndex(Random random, boolean isPhase2) {
+        if (isPhase2) {
+            // In Phase 2, increase the probability of selecting opponent features
+            double randValue = random.nextDouble();
+            if (randValue < 0.5) {
+                // 50% chance to select opponent-related features (indices 11 and 12)
+                return 11 + random.nextInt(2);
+            } else {
+                // 50% chance to select other features (indices 0 to 10)
+                return random.nextInt(11);
+            }
         } else {
-            int decisionFeature = random.nextInt(DecisionNode.NUM_FEATURES);
-            double threshold = random.nextDouble(); // Generate a random threshold for each decision node
-            Node leftChild = full(depth - 1, random);
-            Node rightChild = full(depth - 1, random);
-            return new DecisionNode(decisionFeature, threshold, leftChild, rightChild, random);
+            // In Phase 1, select from features 0 to 10
+            return random.nextInt(11);
         }
     }
-
-
-    public static Node createRandomNode(int depth, Random random) {
-        return random.nextBoolean() ? grow(depth, random) : full(depth, random);
+    
+    public static Node createRandomNode(int maxDepth, Random random, boolean isPhase2) {
+        if (random.nextBoolean()) {
+            return grow(maxDepth, random, isPhase2);
+        } else {
+            return full(maxDepth, random, isPhase2);
+        }
     }
+    
 }
+

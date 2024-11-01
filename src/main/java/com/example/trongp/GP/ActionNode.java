@@ -26,12 +26,16 @@ public class ActionNode extends Node {
         return new ActionNode(this.action, random);
     }
 
+
     @Override
-    public void mutate() {
-        if (random.nextDouble() < GPParameters.MUTATION_RATE) {
-            action = random.nextInt(4);
-        }
+    public void mutate(boolean isPhase2) {
+         double mutationRate = isPhase2 ? GPParameters.PHASE2_MUTATION_RATE : GPParameters.MUTATION_RATE;
+         if (random.nextDouble() < mutationRate) {
+             this.action = random.nextInt(4);
+         }
     }
+    
+
 
     @Override
     public String toString() {

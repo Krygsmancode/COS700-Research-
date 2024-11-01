@@ -1,0 +1,72 @@
+Best Fitness Achieved: 34.75
+Best Parameters:
+MUTATION_RATE: 0.7838932146296818
+CROSSOVER_RATE: 1.0863148257549655
+PHASE2_MUTATION_RATE: 0.2824218386305606
+TOURNAMENT_SIZE: 4
+phase2MaxDepth: 8
+phase1MaxDepth: 5
+POPULATION_SIZE: 181
+
+Best Agent Strategy Tree:
+Decision(NumberOfSafeMoves > 0,39)
+  If True:
+    Decision(DistanceToWallLeft > 0,23)
+      If True:
+        Decision(IsCellFreeDown > 0,10)
+          If True:
+            Decision(IsCellFreeRight > 0,79)
+              If True:
+                Action(Right)
+              If False:
+                Action(Right)
+          If False:
+            Decision(IsCellFreeRight > 0,23)
+              If True:
+                Action(Up)
+              If False:
+                Action(Right)
+      If False:
+        Decision(IsCellFreeDown > 0,28)
+          If True:
+            Decision(IsCellFreeRight > 0,23)
+              If True:
+                Action(Right)
+              If False:
+                Action(Down)
+          If False:
+            Decision(IsCellFreeLeft > 0,23)
+              If True:
+                Action(Right)
+              If False:
+                Action(Up)
+  If False:
+    Decision(DistanceToWallLeft > 0,98)
+      If True:
+        Decision(DistanceToOpponent > 0,90)
+          If True:
+            Decision(IsCellFreeRight > 0,62)
+              If True:
+                Action(Right)
+              If False:
+                Action(Up)
+          If False:
+            Decision(DistanceToOpponent > 0,50)
+              If True:
+                Action(Right)
+              If False:
+                Action(Right)
+      If False:
+        Decision(DistanceToOpponent > 0,47)
+          If True:
+            Decision(IsCellFreeRight > 0,23)
+              If True:
+                Action(Right)
+              If False:
+                Action(Down)
+          If False:
+            Decision(IsCellFreeLeft > 0,26)
+              If True:
+                Action(Up)
+              If False:
+                Action(Right)
