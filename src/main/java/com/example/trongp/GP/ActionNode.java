@@ -5,15 +5,19 @@ import java.util.Random;
 
 public class ActionNode extends Node {
     private int action; // 0: Up, 1: Down, 2: Left, 3: Right
+    private Random random;
 
     public ActionNode(Random random) {
         super(1, random);
+        this.random = random;
         this.action = random.nextInt(4); // Random action between 0 and 3
     }
 
     public ActionNode(int action, Random random) {
         super(1, random);
         this.action = action;
+        this.random = random;  // Make sure this is always initialized
+
     }
 
     @Override
@@ -23,8 +27,9 @@ public class ActionNode extends Node {
 
     @Override
     public Node clone() {
-        return new ActionNode(this.action, random);
+        return new ActionNode(this.action, this.random);  
     }
+    
 
 
     @Override
@@ -57,7 +62,10 @@ public class ActionNode extends Node {
             return this.clone();
         }
         ActionNode otherNode = (ActionNode) other;
-        int newAction = random.nextBoolean() ? this.action : otherNode.action;
-        return new ActionNode(newAction, random);
+        if (this.random == null || otherNode.random == null) {
+            throw new IllegalStateException("Random instance is null during crossover.");
+        }
+        int newAction = this.random.nextBoolean() ? this.action : otherNode.action;
+        return new ActionNode(newAction, this.random);  // Use the same Random instance
     }
 }

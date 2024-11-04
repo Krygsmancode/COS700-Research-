@@ -1,7 +1,6 @@
 plugins {
     id 'java'
     id 'application'
-    id 'org.openjfx.javafxplugin' version '0.0.10'
     id 'org.beryx.jlink' version '2.24.1'
 }
 
@@ -16,8 +15,8 @@ ext {
     junitVersion = '5.8.1'
 }
 
-sourceCompatibility = "14"
-targetCompatibility = "14"
+sourceCompatibility = "17"
+targetCompatibility = "17"
 
 tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
@@ -28,31 +27,19 @@ application {
     mainClass = 'com.example.trongp.TronGameApp'
 }
 
-javafx {
-    version = '11.0.2'
-    modules = ['javafx.controls', 'javafx.fxml']
-}
-
 dependencies {
     implementation 'org.jfree:jfreechart:1.5.3'
-implementation 'org.jfree:jcommon:1.0.24'
+    implementation 'org.jfree:jcommon:1.0.24'
 
-
- testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
 
     implementation('org.controlsfx:controlsfx:11.1.0')
-    implementation('com.dlsc.formsfx:formsfx-core:11.3.2') {
-        exclude(group: 'org.openjfx')
-    }
-    implementation('net.synedra:validatorfx:0.1.13') {
-        exclude(group: 'org.openjfx')
-    }
-    implementation('org.kordamp.ikonli:ikonli-javafx:12.2.0')
+    implementation('com.dlsc.formsfx:formsfx-core:11.3.2')
+    implementation('net.synedra:validatorfx:0.1.13')
+    implementation('org.kordamp.ikonli:ikonli-core:12.2.0')
     implementation('org.kordamp.bootstrapfx:bootstrapfx-core:0.4.0')
-    implementation('eu.hansolo:tilesfx:11.48') {
-        exclude(group: 'org.openjfx')
-    }
+    implementation('eu.hansolo:tilesfx:11.48')
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:${junitVersion}")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${junitVersion}")
@@ -60,14 +47,16 @@ implementation 'org.jfree:jcommon:1.0.24'
 
 test {
     testLogging {
-        // Set options to display the standard out and standard error streams.
         showStandardStreams = true
         events "passed", "skipped", "failed"
     }
+    // Apply memory settings for the test task
+    jvmArgs = ['-Xmx10G', '-Xms6G']
 }
 
 jlink {
-    imageZip = project.file("${buildDir}/distributions/app-${javafx.platform.classifier}.zip")
+    def classifier = project.hasProperty("javafx.platform.classifier") ? project.property("javafx.platform.classifier") : "default"
+    imageZip = project.file("${buildDir}/distributions/app-${classifier}.zip")
     options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages']
     launcher {
         name = 'app'
@@ -79,10 +68,9 @@ jlinkZip {
 }
 
 tasks.withType(JavaExec) {
-    jvmArgs = ['-Xmx8G', '-Xms4G']  // Increase maximum memory to 8GB and initial memory to 4GB
+    // Apply memory settings for the run task
+    jvmArgs = ['-Xmx10G', '-Xms6G']
 }
-
-
 
 run {
     standardInput = System.in

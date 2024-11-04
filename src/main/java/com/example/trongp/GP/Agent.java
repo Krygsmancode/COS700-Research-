@@ -7,18 +7,18 @@ import java.util.Random;
 public class Agent {
     private Strategy strategy;
     private int agentNumber;
-    private Random random;
+    private  Random random;
     private double fitness;
     private static int nextId = 1; // Static counter for unique IDs
     private int id; // Unique identifier
 
 
 
-    public Agent(Strategy strategy, int agentNumber) {
+    public Agent(Strategy strategy, int agentNumber, Random random) {
         this.id = nextId++;
         this.strategy = strategy;
         this.agentNumber = agentNumber;
-        this.random = new Random();
+        this.random = random;
         this.fitness = 0.0; 
     }
 
@@ -49,24 +49,24 @@ public class Agent {
 
         // Execute the strategy to determine the move.
         int move = strategy.execute(gameState, this.agentNumber);
-        System.out.println("Agent #" + this.agentNumber + " initial move: " + move);
+     //   System.out.println("Agent #" + this.agentNumber + " initial move: " + move);
 
         // Validate the move without adjusting it
         if (!isMoveSafe(gameState, this.agentNumber, move)) {
-            System.out.println("Move is unsafe or invalid for Agent #" + this.agentNumber);
+       //     System.out.println("Move is unsafe or invalid for Agent #" + this.agentNumber);
             // Agent loses due to invalid or unsafe move
             return -1;
         }
 
         // Log the final selected move
-        System.out.println("Agent #" + this.agentNumber + " final move: " + move);
+     //   System.out.println("Agent #" + this.agentNumber + " final move: " + move);
         return move;
     }
 
     private boolean isMoveSafe(GameState gameState, int agentNumber, int move) {
         java.awt.Point currentPos = gameState.getCurrentPosition(agentNumber);
         if (currentPos == null) {
-            System.out.println("Error: No current position found for Agent #" + agentNumber);
+     //       System.out.println("Error: No current position found for Agent #" + agentNumber);
             return false; // Invalid position; move is unsafe
         }
 
@@ -144,7 +144,7 @@ public class Agent {
     @Override
     public Agent clone() {
         Strategy clonedStrategy = (this.strategy != null) ? this.strategy.clone() : null;
-        Agent clonedAgent = new Agent(clonedStrategy, this.getNumber());
+        Agent clonedAgent = new Agent(clonedStrategy, this.getNumber(), this.random);
         clonedAgent.setFitness(this.getFitness());
         clonedAgent.setElite(this.isElite());
         return clonedAgent;
@@ -153,7 +153,7 @@ public class Agent {
     
     public Agent cloneWithNewNumber(int newNumber) {
         Strategy clonedStrategy = (this.strategy != null) ? this.strategy.clone() : null;
-        Agent clonedAgent = new Agent(clonedStrategy, newNumber);
+        Agent clonedAgent = new Agent(clonedStrategy, newNumber, this.random);
         clonedAgent.setFitness(this.getFitness());
         clonedAgent.setElite(this.isElite());
         return clonedAgent;

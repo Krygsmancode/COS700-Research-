@@ -21,6 +21,13 @@ public class Population {
     private double elitismRate;
     private int agentNumberForNewAgents; // New field to assign agent numbers
 
+    private List<Double> fitnessValues;
+    private List<Integer> treeDepths;
+    private List<Integer> treeSizes;
+    private int mutationCount;
+    private int crossoverCount;
+
+
 
 
     public Population(int populationSize, int maxDepth, Random random, boolean isSoloPhase) {
@@ -29,14 +36,18 @@ public class Population {
         this.elitismRate = GPParameters.elitismRate;
         this.isSoloPhase = isSoloPhase;
         this.agentNumberForNewAgents = isSoloPhase ? 1 : -1; // -1 as placeholder for competitive phase
+        this.fitnessValues = new ArrayList<>();
+        this.treeDepths = new ArrayList<>();
+        this.treeSizes = new ArrayList<>();
+        this.mutationCount = 0;
+        this.crossoverCount = 0;
         agents = new ArrayList<>();
         for (int i = 0; i < populationSize; i++) {
-            Strategy strategy = new Strategy(maxDepth, random, true, !isSoloPhase); // isPhase2 = !isSoloPhase
-            Agent agent = new Agent(strategy, agentNumberForNewAgents);
+            Strategy strategy = new Strategy(maxDepth, random, true, !isSoloPhase); // Pass random
+            Agent agent = new Agent(strategy, agentNumberForNewAgents, random); // Pass random
             agents.add(agent);
         }
     }
-    
     
     public Population(List<Agent> agents, int maxDepth, Random random, boolean isSoloPhase, int agentNumberForNewAgents) {
         this.random = random;
@@ -45,6 +56,11 @@ public class Population {
         this.isSoloPhase = isSoloPhase;
         this.elitismRate = GPParameters.elitismRate;
         this.agentNumberForNewAgents = agentNumberForNewAgents;
+        this.fitnessValues = new ArrayList<>();
+        this.treeDepths = new ArrayList<>();
+        this.treeSizes = new ArrayList<>();
+        this.mutationCount = 0;
+        this.crossoverCount = 0;
     }
 
     public double calculateAverageTreeDistance() {
@@ -68,12 +84,12 @@ public class Population {
         double fitnessStdDev = getFitnessStandardDeviation();
         double averageHammingDistance = calculateAverageHammingDistance();
     
-        System.out.println("Population Dynamics:");
-        System.out.println("  Average Tree Distance: " + averageTreeDistance);
-        System.out.println("  Average Hamming Distance: " + averageHammingDistance);
-        System.out.println("  Mean Fitness: " + meanFitness);
-        System.out.println("  Fitness Variance: " + fitnessVariance);
-        System.out.println("  Fitness Standard Deviation: " + fitnessStdDev);
+        // System.out.println("Population Dynamics:");
+        // System.out.println("  Average Tree Distance: " + averageTreeDistance);
+        // System.out.println("  Average Hamming Distance: " + averageHammingDistance);
+        // System.out.println("  Mean Fitness: " + meanFitness);
+        // System.out.println("  Fitness Variance: " + fitnessVariance);
+        // System.out.println("  Fitness Standard Deviation: " + fitnessStdDev);
     }
     
     
@@ -150,6 +166,10 @@ public class Population {
     // Combined evaluation for both solo and competitive phases, based on isSoloPhase flag
 // In Population.java
 public void evaluateFitness(Population opponentPopulation) {
+    fitnessValues.clear();
+    treeDepths.clear();
+    treeSizes.clear();
+    
     if (opponentPopulation == null) {
         // Solo Phase
         evaluateFitnessSolo();
@@ -182,12 +202,12 @@ public void evolve(Population opponentPopulation) {
         } while (parent1 == parent2);
 
         Strategy offspringStrategy = parent1.getStrategy().crossover(parent2.getStrategy(), maxDepth);
-        boolean isPhase2 = !isSoloPhase;
+        offspringStrategy.setPhase(!isSoloPhase);
 
         // Use increased mutation rate and adjusted feature selection in Phase 2
         offspringStrategy.mutate(maxDepth);
 
-        Agent offspring = new Agent(offspringStrategy, agentNumberForNewAgents);
+        Agent offspring = new Agent(offspringStrategy, agentNumberForNewAgents,random);
         offspring.setElite(false);
 
         // Evaluate offspring fitness
@@ -213,7 +233,7 @@ public void evolve(Population opponentPopulation) {
             }
           //  applyFitnessSharing();
 
-            analyzePopulationDynamics();
+       //     analyzePopulationDynamics();
         }
     }
     
@@ -229,11 +249,11 @@ public void evolve(Population opponentPopulation) {
         analyzePopulationDynamics();
     
         // Debugging: Print fitness statistics
-        System.out.println("Phase 2 Population Fitness Statistics:");
-        System.out.println("  Best Fitness: " + getBestFitness());
-        System.out.println("  Mean Fitness: " + getMeanFitness());
-        System.out.println("  Fitness Variance: " + getFitnessVariance());
-        System.out.println("  Fitness Standard Deviation: " + getFitnessStandardDeviation());
+        // System.out.println("Phase 2 Population Fitness Statistics:");
+        // System.out.println("  Best Fitness: " + getBestFitness());
+        // System.out.println("  Mean Fitness: " + getMeanFitness());
+        // System.out.println("  Fitness Variance: " + getFitnessVariance());
+        // System.out.println("  Fitness Standard Deviation: " + getFitnessStandardDeviation());
     }
 
 
@@ -244,7 +264,7 @@ public void evolve(Population opponentPopulation) {
     double totalTrailLength = 0.0;
     double fitness = 0.0;
 
-    HandCraftedAgent handCraftedAgent = new HandCraftedAgent(2); // Assuming agent number 2
+    HandCraftedAgent handCraftedAgent = new HandCraftedAgent(2, this.random); // Assuming agent number 2
 
 
     for (int i = 0; i < GPParameters.GAMES_TO_PLAY; i++) {
@@ -259,7 +279,7 @@ public void evolve(Population opponentPopulation) {
         }
         
         // Initialize a new game state with agents randomly placed
-        GameState gameState = new GameState(GPParameters.GRID_SIZE, GPParameters.GRID_SIZE, false);
+        GameState gameState = new GameState(GPParameters.GRID_SIZE, GPParameters.GRID_SIZE, false, random);
         
         // Reset the game to ensure random starting positions
         gameState.reset();
@@ -296,12 +316,12 @@ public void evolve(Population opponentPopulation) {
     agent.setFitness(fitness);
     
     // Debugging output
-    System.out.println("Agent #" + agent.getNumber() + " Competitive Fitness Calculated: " + fitness);
+   // System.out.println("Agent #" + agent.getNumber() + " Competitive Fitness Calculated: " + fitness);
 }
 private void evaluateFitnessSoloForAgent(Agent agent) {
-    GameState gameStateSolo = new GameState(GPParameters.SOLO_GRID_SIZE, GPParameters.SOLO_GRID_SIZE, true);
+    GameState gameStateSolo = new GameState(GPParameters.SOLO_GRID_SIZE, GPParameters.SOLO_GRID_SIZE, true, random);
     double initialFitness = agent.getFitness();
-    System.out.println("Starting Fitness Evaluation for Agent #" + agent.getNumber() + " Initial Fitness: " + initialFitness);
+   // System.out.println("Starting Fitness Evaluation for Agent #" + agent.getNumber() + " Initial Fitness: " + initialFitness);
 
     int steps = 0;
     double fitness = 0.0;
@@ -343,7 +363,7 @@ private void evaluateFitnessSoloForAgent(Agent agent) {
 
     fitness = Math.max(fitness, 0.0);
     agent.setFitness(fitness);
-    System.out.println("Completed Fitness Evaluation for Agent #" + agent.getNumber() + " Final Fitness: " + fitness);
+   // System.out.println("Completed Fitness Evaluation for Agent #" + agent.getNumber() + " Final Fitness: " + fitness);
 }
 
     
@@ -414,8 +434,8 @@ private void evaluateFitnessSoloForAgent(Agent agent) {
             int move2 = blueAgent.makeMove(gameState, blueAgent.getNumber());
     
             // Log the moves
-            System.out.println("Agent #" + redAgent.getNumber() + " Move: " + move1);
-            System.out.println("Agent #" + blueAgent.getNumber() + " Move: " + move2);
+        //    System.out.println("Agent #" + redAgent.getNumber() + " Move: " + move1);
+        //    System.out.println("Agent #" + blueAgent.getNumber() + " Move: " + move2);
     
             // Update the game state with both moves
             gameState.update(move1, move2);

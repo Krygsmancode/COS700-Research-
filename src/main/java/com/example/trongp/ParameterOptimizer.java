@@ -1,114 +1,207 @@
 package com.example.trongp;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
+
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartUtils;
+import org.jfree.chart.JFreeChart;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 
 import com.example.trongp.GP.Agent;
 import com.example.trongp.GP.EvolutionEngine;
 import com.example.trongp.GP.GPParameters;
 
 public class ParameterOptimizer {
-    private Random random = new Random();
+    private Random random;
     private List<OptimizationResult> results = new ArrayList<>();
 
-    public void optimizeParameters(int trials) {
-        double bestFitness = Double.NEGATIVE_INFINITY;
-        Map<String, Object> bestParameters = new HashMap<>();
-        Agent bestAgent = null; // To store the best agent
+    public ParameterOptimizer(Random random) {
+        this.random = random;
+    }
 
-        for (int i = 0; i < trials; i++) {
-            // Randomly select parameters
-            GPParameters.MUTATION_RATE = random.nextDouble(); // 0.0 to 1.0
-            GPParameters.PHASE2_MUTATION_RATE = random.nextDouble(); // 0.0 to 1.0
-            GPParameters.CROSSOVER_RATE = 0.6 + random.nextDouble() / 2; // 0.5 to 1.0
-            GPParameters.POPULATION_SIZE = 20 + random.nextInt(181); // 20 to 200
-            GPParameters.TOURNAMENT_SIZE = 2 + random.nextInt(7); // 2 to 10
-            GPParameters.phase1MaxDepth = 2 + random.nextInt(5); // 2 to 6
-            GPParameters.phase2MaxDepth = 4 + random.nextInt(7); // 4 to 10
 
-            // Run the evolution engine with these parameters
-            EvolutionEngine engine = new EvolutionEngine(GPParameters.POPULATION_SIZE, GPParameters.GENERATIONS);
-            engine.runEvolution();
+public void optimizeParameters(int trials) {
+    double bestFitness = Double.NEGATIVE_INFINITY;
+    Map<String, Object> bestParameters = new HashMap<>();
+    Agent bestAgent = null; // To store the best agent
 
-            // Get the best fitness achieved
-            Agent currentBestAgent = engine.getBestRedAgent(); // Assuming best red agent
-            double currentBestFitness = currentBestAgent.getFitness();
+    
+    for (int i = 0; i < trials; i++) {
+        // Use the existing random instance for generating parameters
+        GPParameters.MUTATION_RATE = 0.01 + 0.09 * random.nextDouble();
+        GPParameters.PHASE2_MUTATION_RATE = 0.01 + 0.09 * random.nextDouble();
+        GPParameters.CROSSOVER_RATE = 0.6 + 0.4 * random.nextDouble();
+        GPParameters.TOURNAMENT_SIZE = 3 + random.nextInt(8);
+        GPParameters.phase1MaxDepth = 2 + random.nextInt(4);
+        GPParameters.phase2MaxDepth = 5 + random.nextInt(4);
 
-            // Save the parameters and fitness
-            Map<String, Object> currentParameters = new HashMap<>();
-            currentParameters.put("MUTATION_RATE", GPParameters.MUTATION_RATE);
-            currentParameters.put("PHASE2_MUTATION_RATE", GPParameters.PHASE2_MUTATION_RATE);
-            currentParameters.put("CROSSOVER_RATE", GPParameters.CROSSOVER_RATE);
-            currentParameters.put("POPULATION_SIZE", GPParameters.POPULATION_SIZE);
-            currentParameters.put("TOURNAMENT_SIZE", GPParameters.TOURNAMENT_SIZE);
-            currentParameters.put("phase1MaxDepth", GPParameters.phase1MaxDepth);
-            currentParameters.put("phase2MaxDepth", GPParameters.phase2MaxDepth);
 
-            OptimizationResult result = new OptimizationResult(currentParameters, currentBestFitness);
-            results.add(result);
-
-            // If this is the best so far, save the parameters and agent
-            if (currentBestFitness > bestFitness) {
-                bestFitness = currentBestFitness;
-                bestParameters = new HashMap<>(currentParameters);
-                bestAgent = currentBestAgent.clone(); // Clone to avoid mutation in future iterations
-            }
-
-            // Optionally, print the progress
-            System.out.println("Trial " + (i + 1) + "/" + trials + " completed.");
-            System.out.println("Current Best Fitness: " + currentBestFitness);
-            System.out.println("Best Fitness so far: " + bestFitness);
-
-            // Save the current result to file after each trial
-            saveResultsToFile("optimization_results.csv");
+        // Create a unique identifier for each trial
+        String trialId = "Trial_" + (i + 1);
+        String trialDir = trialId;
+        File dir = new File(trialDir);
+        if (!dir.exists()) {
+            dir.mkdir();
         }
 
-        // Output the best parameters found
-        System.out.println("Optimization completed.");
-        System.out.println("Best Fitness Achieved: " + bestFitness);
-        System.out.println("Best Parameters:");
+        // Run the evolution engine with these parameters
+        EvolutionEngine engine = new EvolutionEngine(
+            GPParameters.POPULATION_SIZE,
+            GPParameters.GENERATIONS,
+            trialDir + "/" + trialId,
+            random // Pass the shared Random instance
+        );        engine.runEvolution();
+
+        // Get the fitness histories
+        List<Double> bestFitnessHistorySolo = engine.getBestFitnessHistorySolo();
+        List<Double> averageFitnessHistorySolo = engine.getAverageFitnessHistorySolo();
+        List<Double> bestFitnessHistoryRed = engine.getBestFitnessHistoryRed();
+        List<Double> averageFitnessHistoryRed = engine.getAverageFitnessHistoryRed();
+        List<Double> bestFitnessHistoryBlue = engine.getBestFitnessHistoryBlue();
+        List<Double> averageFitnessHistoryBlue = engine.getAverageFitnessHistoryBlue();
+
+        // Save the fitness plots
+        saveFitnessPlot(bestFitnessHistorySolo, averageFitnessHistorySolo, trialDir + "/" + trialId + "_Phase1");
+        saveFitnessPlot(bestFitnessHistoryRed, averageFitnessHistoryRed, trialDir + "/" + trialId + "_Red");
+        saveFitnessPlot(bestFitnessHistoryBlue, averageFitnessHistoryBlue, trialDir + "/" + trialId + "_Blue");
+
+        // Get the best fitness achieved
+        Agent currentBestAgent = engine.getBestRedAgent(); // Assuming best red agent
+        double currentBestFitness = currentBestAgent.getFitness();
+        double currentAverageFitness = engine.getRedPopulation().getMeanFitness();
+        double currentVarianceFitness = engine.getRedPopulation().getFitnessVariance();
+
+        // Save the parameters and fitness
+        Map<String, Object> currentParameters = new HashMap<>();
+        currentParameters.put("MUTATION_RATE", GPParameters.MUTATION_RATE);
+        currentParameters.put("PHASE2_MUTATION_RATE", GPParameters.PHASE2_MUTATION_RATE);
+        currentParameters.put("CROSSOVER_RATE", GPParameters.CROSSOVER_RATE);
+        currentParameters.put("POPULATION_SIZE", GPParameters.POPULATION_SIZE);
+        currentParameters.put("TOURNAMENT_SIZE", GPParameters.TOURNAMENT_SIZE);
+        currentParameters.put("phase1MaxDepth", GPParameters.phase1MaxDepth);
+        currentParameters.put("phase2MaxDepth", GPParameters.phase2MaxDepth);
+
+        OptimizationResult result = new OptimizationResult(currentParameters, currentBestFitness, currentAverageFitness, currentVarianceFitness);
+        results.add(result);
+
+        // If this is the best so far, save the parameters and agent
+        if (currentBestFitness > bestFitness) {
+            bestFitness = currentBestFitness;
+            bestParameters = new HashMap<>(currentParameters);
+            bestAgent = currentBestAgent.clone(); // Clone to avoid mutation in future iterations
+        }
+
+        // Optionally, print the progress
+        System.out.println("Trial " + (i + 1) + "/" + trials + " completed.");
+        System.out.println("Current Best Fitness: " + currentBestFitness);
+        System.out.println("Best Fitness so far: " + bestFitness);
+
+        // Save the current result to file after each trial
+        saveResultsToFile("optimization_results.csv");
+    }
+
+    // Output the best parameters found
+    System.out.println("Optimization completed.");
+    System.out.println("Best Fitness Achieved: " + bestFitness);
+    System.out.println("Best Parameters:");
+    for (Map.Entry<String, Object> entry : bestParameters.entrySet()) {
+        System.out.println("  " + entry.getKey() + ": " + entry.getValue());
+    }
+
+    // Save the best result to a separate file
+    saveBestResultToFile("best_parameters.txt", bestParameters, bestFitness, bestAgent);
+}
+
+    // In ParameterOptimizer.java
+
+private void saveFitnessPlot(List<Double> bestFitnessHistory, List<Double> averageFitnessHistory, String filename) {
+    XYSeries bestFitnessSeries = new XYSeries("Best Fitness");
+    XYSeries averageFitnessSeries = new XYSeries("Average Fitness");
+
+    for (int i = 0; i < bestFitnessHistory.size(); i++) {
+        bestFitnessSeries.add(i + 1, bestFitnessHistory.get(i));
+        averageFitnessSeries.add(i + 1, averageFitnessHistory.get(i));
+    }
+
+    XYSeriesCollection dataset = new XYSeriesCollection();
+    dataset.addSeries(bestFitnessSeries);
+    dataset.addSeries(averageFitnessSeries);
+
+    JFreeChart chart = ChartFactory.createXYLineChart(
+            "Fitness Over Generations",
+            "Generation",
+            "Fitness",
+            dataset,
+            org.jfree.chart.plot.PlotOrientation.VERTICAL,
+            true,
+            true,
+            false
+    );
+
+    try {
+        ChartUtils.saveChartAsPNG(new File(filename + ".png"), chart, 800, 600);
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
+}
+
+// In ParameterOptimizer.java
+
+public EvolutionEngine getRedPopulation() {
+    return getRedPopulation();
+}
+
+public EvolutionEngine getBluePopulation() {
+    return getBluePopulation();
+}
+
+
+
+    // In ParameterOptimizer.java
+
+private void saveResultsToFile(String filename) {
+    try (FileWriter writer = new FileWriter(filename)) {
+        // Write header
+        writer.append("Trial,MUTATION_RATE,PHASE2_MUTATION_RATE,CROSSOVER_RATE,POPULATION_SIZE,TOURNAMENT_SIZE,phase1MaxDepth,phase2MaxDepth,BestFitness,AverageFitness,FitnessVariance\n");
+        int trialNumber = 1;
+        for (OptimizationResult result : results) {
+            writer.append(String.valueOf(trialNumber)).append(",");
+            writer.append(String.valueOf(result.parameters.get("MUTATION_RATE"))).append(",");
+            writer.append(String.valueOf(result.parameters.get("PHASE2_MUTATION_RATE"))).append(",");
+            writer.append(String.valueOf(result.parameters.get("CROSSOVER_RATE"))).append(",");
+            writer.append(String.valueOf(result.parameters.get("POPULATION_SIZE"))).append(",");
+            writer.append(String.valueOf(result.parameters.get("TOURNAMENT_SIZE"))).append(",");
+            writer.append(String.valueOf(result.parameters.get("phase1MaxDepth"))).append(",");
+            writer.append(String.valueOf(result.parameters.get("phase2MaxDepth"))).append(",");
+            writer.append(String.valueOf(result.bestFitness)).append(",");
+            writer.append(String.valueOf(result.averageFitness)).append(",");
+            writer.append(String.valueOf(result.varianceFitness)).append("\n");
+            trialNumber++;
+        }
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
+}
+
+
+   // In ParameterOptimizer.java
+
+private void saveBestResultToFile(String filename, Map<String, Object> bestParameters, double bestFitness, Agent bestAgent) {
+    try (FileWriter writer = new FileWriter(filename)) {
+        writer.write("Best Fitness Achieved: " + bestFitness + "\n");
+        writer.write("Best Parameters:\n");
         for (Map.Entry<String, Object> entry : bestParameters.entrySet()) {
-            System.out.println("  " + entry.getKey() + ": " + entry.getValue());
+            writer.write(entry.getKey() + ": " + entry.getValue() + "\n");
         }
-
-        // Save the best result to a separate file
-        saveBestResultToFile("best_parameters.txt", bestParameters, bestFitness, bestAgent);
+        writer.write("\nBest Agent Strategy Tree:\n");
+        writer.write(bestAgent.getStrategy().getTreeRepresentation());
+    } catch (IOException e) {
+        e.printStackTrace();
     }
+}
 
-    private void saveResultsToFile(String filename) {
-        try (FileWriter writer = new FileWriter(filename)) {
-            // Write header
-            writer.append("Trial,MUTATION_RATE,PHASE2_MUTATION_RATE,CROSSOVER_RATE,POPULATION_SIZE,TOURNAMENT_SIZE,phase1MaxDepth,phase2MaxDepth,BestFitness\n");
-            int trialNumber = 1;
-            for (OptimizationResult result : results) {
-                writer.append(String.valueOf(trialNumber)).append(",");
-                writer.append(String.valueOf(result.parameters.get("MUTATION_RATE"))).append(",");
-                writer.append(String.valueOf(result.parameters.get("PHASE2_MUTATION_RATE"))).append(",");
-                writer.append(String.valueOf(result.parameters.get("CROSSOVER_RATE"))).append(",");
-                writer.append(String.valueOf(result.parameters.get("POPULATION_SIZE"))).append(",");
-                writer.append(String.valueOf(result.parameters.get("TOURNAMENT_SIZE"))).append(",");
-                writer.append(String.valueOf(result.parameters.get("phase1MaxDepth"))).append(",");
-                writer.append(String.valueOf(result.parameters.get("phase2MaxDepth"))).append(",");
-                writer.append(String.valueOf(result.bestFitness)).append("\n");
-                trialNumber++;
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void saveBestResultToFile(String filename, Map<String, Object> bestParameters, double bestFitness, Agent bestAgent) {
-        try (FileWriter writer = new FileWriter(filename)) {
-            writer.write("Best Fitness Achieved: " + bestFitness + "\n");
-            writer.write("Best Parameters:\n");
-            for (Map.Entry<String, Object> entry : bestParameters.entrySet()) {
-                writer.write(entry.getKey() + ": " + entry.getValue() + "\n");
-            }
-            writer.write("\nBest Agent Strategy Tree:\n");
-            writer.write(bestAgent.getStrategy().getTreeRepresentation());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 }

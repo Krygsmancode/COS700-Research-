@@ -19,7 +19,7 @@ public class Strategy implements Cloneable {
     }
 
     public Strategy crossover(Strategy other, int maxDepth, double crossoverRate) {
-        Random rand = new Random();
+        Random rand = this.random;
         if (rand.nextDouble() < crossoverRate) {
             return this.crossover(other, maxDepth);
         }
@@ -206,6 +206,7 @@ public void mutate(int maxDepth) {
         Strategy clonedStrategy = new Strategy(this.root.clone(), this.random, this.isPhase2);
         return clonedStrategy;
     }
+    
     
     
     

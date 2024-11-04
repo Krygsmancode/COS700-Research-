@@ -5,9 +5,11 @@ import com.example.trongp.Point;
 import java.util.Random;
 
 public class HandCraftedAgent extends Agent {
+    private Random random;
 
-    public HandCraftedAgent(int agentNumber) {
-        super(null, agentNumber); // No strategy tree needed
+    public HandCraftedAgent(int agentNumber, Random random) {
+        super(null, agentNumber,random); // No strategy tree needed
+        this.random = random;
     }
 
     @Override
@@ -41,7 +43,7 @@ public class HandCraftedAgent extends Agent {
 
     @Override
 public Agent clone() {
-    HandCraftedAgent clonedAgent = new HandCraftedAgent(this.getNumber());
+    HandCraftedAgent clonedAgent = new HandCraftedAgent(this.getNumber(), this.random);
     clonedAgent.setFitness(this.getFitness());
     clonedAgent.setElite(this.isElite());
     return clonedAgent;
@@ -49,7 +51,7 @@ public Agent clone() {
 
 @Override
 public Agent cloneWithNewNumber(int newNumber) {
-    HandCraftedAgent clonedAgent = new HandCraftedAgent(newNumber);
+    HandCraftedAgent clonedAgent = new HandCraftedAgent(newNumber, this.random);
     clonedAgent.setFitness(this.getFitness());
     clonedAgent.setElite(this.isElite());
     return clonedAgent;

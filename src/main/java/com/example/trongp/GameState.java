@@ -15,17 +15,18 @@ public class GameState {
     private Trail agent1Trail;
     private Trail agent2Trail;
     private boolean agent1Wins;
-    private Random random = new Random(GPParameters.SEED);
+    private Random random;
     private boolean agent2Wins;
     private boolean soloMode = false;
     private Map<Integer, List<Point>> agentTrails;
 
-    public GameState(int width, int height, boolean soloMode) {
+    public GameState(int width, int height, boolean soloMode, Random random) {
         this.grid = new int[height][width]; // Corrected grid initialization
         this.gameOver = false;
         this.agent1Trail = new Trail();
         this.agent2Trail = new Trail();
         this.soloMode = soloMode;
+        this.random = random;
 
         // Initialize agentTrails
         agentTrails = new HashMap<>();
@@ -87,7 +88,7 @@ public class GameState {
                 break;
             default:
                 // Invalid move, return null
-                System.out.println("Invalid move received: " + move);
+      //          System.out.println("Invalid move received: " + move);
                 return null;
         }
         return new Point(x, y);
@@ -102,7 +103,7 @@ public class GameState {
             return new Point(agent2X, agent2Y);
         } else {
             // Return null if agentNumber is not recognized or in solo mode for agent 2
-            System.out.println("Invalid agent number or agent not available: " + agentNumber);
+    //        System.out.println("Invalid agent number or agent not available: " + agentNumber);
             return null;
         }
     }
@@ -114,37 +115,37 @@ public class GameState {
     
     
     public void update(int agent1Move, int agent2Move) {
-        Random random = new Random(); // Random object for making decisions
+        Random random = this.random; // Random object for making decisions
     
         if (gameOver) {
-            System.out.println("Game is over. No update required.");
-            displayGridCoverage(); // Display grid coverage when the game is over
+    //        System.out.println("Game is over. No update required.");
+     //       displayGridCoverage(); // Display grid coverage when the game is over
             return; // Exit the method if the game is over
         }
     
         // Log current positions
-        System.out.println("Agent 1 Position: (" + agent1X + "," + agent1Y + ")");
+  //      System.out.println("Agent 1 Position: (" + agent1X + "," + agent1Y + ")");
         if (!soloMode) {
-            System.out.println("Agent 2 Position: (" + agent2X + "," + agent2Y + ")");
+    //        System.out.println("Agent 2 Position: (" + agent2X + "," + agent2Y + ")");
         }
     
         if (agent1Move == -1) {
-            System.out.println("Agent 1 has no valid moves. Game over.");
+    //        System.out.println("Agent 1 has no valid moves. Game over.");
             gameOver = true;
             agent1Wins = false;
             agent2Wins = !soloMode;
-            displayGridCoverage();
+       //     displayGridCoverage();
             return;
         }
     
         // Agent 1's turn
         Point agent1NextPosition = getNextPosition(agent1X, agent1Y, agent1Move);
         if (agent1NextPosition == null) {
-            System.out.println("Agent 1 made an invalid move. Game over.");
+      //      System.out.println("Agent 1 made an invalid move. Game over.");
             gameOver = true;
             agent1Wins = false;
             agent2Wins = !soloMode;
-            displayGridCoverage();
+        //    displayGridCoverage();
             return;
         }
         boolean agent1Collision = checkCollision(agent1NextPosition);
@@ -153,8 +154,8 @@ public class GameState {
             gameOver = true;
             agent1Wins = false;
             agent2Wins = !soloMode; // In solo mode, agent2Wins should be false
-            System.out.println("Agent 1 collided.");
-            displayGridCoverage(); // Display grid coverage when the game is over
+      //      System.out.println("Agent 1 collided.");
+       //     displayGridCoverage(); // Display grid coverage when the game is over
             return;
         } else {
             updateAgentPosition(1, agent1NextPosition);
@@ -164,32 +165,32 @@ public class GameState {
         if (!soloMode) {
             // Agent 2's turn
             if (agent2Move == -1) {
-                System.out.println("Agent 2 has no valid moves. Game over.");
+         //       System.out.println("Agent 2 has no valid moves. Game over.");
                 gameOver = true;
                 agent1Wins = true;
                 agent2Wins = false;
-                displayGridCoverage();
+        //       displayGridCoverage();
                 return;
             }
     
             Point agent2NextPosition = getNextPosition(agent2X, agent2Y, agent2Move);
             boolean agent2Collision = checkCollision(agent2NextPosition);
     
-            System.out.println("Agent 2 intends to move to: (" + agent2NextPosition.x + "," + agent2NextPosition.y + ")");
-            System.out.println("Agent 2 Collision: " + agent2Collision);
+      //      System.out.println("Agent 2 intends to move to: (" + agent2NextPosition.x + "," + agent2NextPosition.y + ")");
+       //     System.out.println("Agent 2 Collision: " + agent2Collision);
     
             if (agent1NextPosition.equals(agent2NextPosition)) {
                 gameOver = true;
                 if (random.nextBoolean()) { // Randomly choose the winning agent
                     agent1Wins = true;
                     agent2Wins = false;
-                    System.out.println("Agents collided with each other. Random winner: Agent 1.");
+        //            System.out.println("Agents collided with each other. Random winner: Agent 1.");
                 } else {
                     agent1Wins = false;
                     agent2Wins = true;
-                    System.out.println("Agents collided with each other. Random winner: Agent 2.");
+           //         System.out.println("Agents collided with each other. Random winner: Agent 2.");
                 }
-                displayGridCoverage(); // Display grid coverage when the game is over
+          //      displayGridCoverage(); // Display grid coverage when the game is over
                 return;
             }
     
@@ -197,8 +198,8 @@ public class GameState {
                 gameOver = true;
                 agent1Wins = true;
                 agent2Wins = false;
-                System.out.println("Agent 2 collided.");
-                displayGridCoverage(); // Display grid coverage when the game is over
+           //     System.out.println("Agent 2 collided.");
+          //      displayGridCoverage(); // Display grid coverage when the game is over
             } else {
                 updateAgentPosition(2, agent2NextPosition);
                 agentTrails.get(2).add(new Point(agent2X, agent2Y));
@@ -206,8 +207,8 @@ public class GameState {
         }
     
         // Display the updated grid state after each move
-        printGrid();
-        displayGridCoverage();
+        //printGrid();
+     //   displayGridCoverage();
     }
     
 
@@ -228,7 +229,7 @@ public class GameState {
     }
     
     public void printGrid() {
-        System.out.println("Current Grid State:");
+   //     System.out.println("Current Grid State:");
         for (int y = 0; y < grid.length; y++) {
             for (int x = 0; x < grid[y].length; x++) {
                 int cellValue = grid[y][x];
@@ -254,7 +255,7 @@ public class GameState {
                 }
                 System.out.print(displayChar + " ");
             }
-            System.out.println();
+       //     System.out.println();
         }
     }
     

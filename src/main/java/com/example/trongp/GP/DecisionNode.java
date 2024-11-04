@@ -12,6 +12,7 @@ public class DecisionNode extends Node {
     Node right;
     int decisionFeature;
     double threshold; // Added threshold
+    private Random random;
 
     public DecisionNode(int decisionFeature, double threshold, Node left, Node right, Random random) {
         super(Math.max(left.getMaxDepth(), right.getMaxDepth()) + 1, random);
@@ -19,13 +20,14 @@ public class DecisionNode extends Node {
         this.threshold = threshold;
         this.left = left;
         this.right = right;
+        this.random = random;
     }
 
     @Override
     public int evaluate(GameState gameState, int agentNumber) {
         // Ensure we do not proceed if the game is over
         if (gameState.isGameOver()) {
-            System.out.println("Game over, no further decisions required for agent #" + agentNumber);
+      //      System.out.println("Game over, no further decisions required for agent #" + agentNumber);
             return -1; // Indicate no move is required
         }
 
@@ -222,18 +224,14 @@ private double distanceToEnemyTrail(GameState gameState, int agentX, int agentY,
             return this.clone();
         }
         DecisionNode otherNode = (DecisionNode) other;
+        if (this.random == null || otherNode.random == null) {
+            throw new IllegalStateException("Random instance is null during crossover.");
+        }
+        Node newLeft = this.random.nextDouble() < GPParameters.CROSSOVER_RATE ? this.left.crossover(otherNode.left) : this.left.clone();
+        Node newRight = this.random.nextDouble() < GPParameters.CROSSOVER_RATE ? this.right.crossover(otherNode.right) : this.right.clone();
+        double newThreshold = this.random.nextBoolean() ? this.threshold : otherNode.threshold;
     
-        Node newLeft = random.nextDouble() < GPParameters.CROSSOVER_RATE ? this.left.crossover(otherNode.left) : this.left.clone();
-        Node newRight = random.nextDouble() < GPParameters.CROSSOVER_RATE ? this.right.crossover(otherNode.right) : this.right.clone();
-        double newThreshold = random.nextBoolean() ? this.threshold : otherNode.threshold;
-    
-        return new DecisionNode(
-                random.nextBoolean() ? this.decisionFeature : otherNode.decisionFeature,
-                newThreshold,
-                newLeft,
-                newRight,
-                random
-        );
+        return new DecisionNode(this.random.nextBoolean() ? this.decisionFeature : otherNode.decisionFeature, newThreshold, newLeft, newRight, this.random);
     }
     
 
@@ -241,7 +239,7 @@ private double distanceToEnemyTrail(GameState gameState, int agentX, int agentY,
     public Node clone() {
         Node clonedLeft = this.left.clone();
         Node clonedRight = this.right.clone();
-        return new DecisionNode(this.decisionFeature, this.threshold, clonedLeft, clonedRight, random);
+        return new DecisionNode(this.decisionFeature, this.threshold, clonedLeft, clonedRight, this.random);
     }
 
     
