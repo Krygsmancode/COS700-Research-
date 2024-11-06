@@ -9,11 +9,11 @@ public class GPParameters {
     public static  double PHASE2_MUTATION_RATE = 0.05; 
 
 
-    public static final int SEED = 23442;
+    public static int SEED = 0;
     public static final int GAMES_TO_PLAY = 5;
     public static final int GENERATIONS = 2000;
     public static final int CELL_SIZE = 20;
-    public static final int GRID_SIZE = 5;
+    public static final int GRID_SIZE = 6;
     static final int SIMILARITY_THRESHOLD = 10; // Adjust as needed
 
     
@@ -24,7 +24,7 @@ public class GPParameters {
     public static final double EXPLORATION_WEIGHT = 10.0;      // Increased to further emphasize exploration
     public static final double REVISIT_PENALTY_WEIGHT = 10.0; // Increased to strongly discourage revisiting
     public static final double FULL_GRID_BONUS = 1000.0;       // Bonus for covering the entire grid
-    public static final int SOLO_GRID_SIZE = 5;                // Grid size for solo mode
+    public static final int SOLO_GRID_SIZE = 6;                // Grid size for solo mode
     
     public static final double LOSS_PENALTY = 10.0;           // Reduced to reduce discouragement from losing
     public static final double DRAW_WEIGHT = 5.0;              // Reduced as draws are less desirable

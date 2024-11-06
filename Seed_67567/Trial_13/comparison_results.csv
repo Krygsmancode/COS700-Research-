@@ -1,0 +1,9 @@
+Comparison Results Against Hand-Crafted Agent
+Metric,Red Agents,Blue Agents
+WinRate,0.3820,0.1960
+AverageTrailLength,11.2700,9.6180
+DrawRate,0.0000,0.0000
+MaxTrailLength,14.0000,15.0000
+LossRate,0.6180,0.8040
+TrailLengthStdDev,2.7124,1.7562
+MinTrailLength,7.0000,6.0000

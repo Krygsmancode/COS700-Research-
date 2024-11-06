@@ -1,0 +1,2 @@
+Seed,Trial,Population Size,Phase1 Max Depth,Phase2 Max Depth,Mutation Rate,Phase2 Mutation Rate,Tournament Size,Crossover Rate,Grid Size,Generations,Games to Play,Win Weight,Trail Weight,Best Red Agent Fitness,Best Blue Agent Fitness
+334,3,200,4,6,0.0739,0.0271,6,0.8284,6,2000,5,20.0000,5.0000,109.500,251.000

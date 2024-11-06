@@ -1,0 +1,3 @@
+20202020,10,0.4000,0.6000,0.0000,10.6680,18.0000,6.0000,3.0564
+Seed,Trial,Population Size,Phase1 Max Depth,Phase2 Max Depth,Mutation Rate,Phase2 Mutation Rate,Tournament Size,Crossover Rate,Grid Size,Generations,Games to Play,Win Weight,Trail Weight,Best Red Agent Fitness,Best Blue Agent Fitness
+20202020,10,0.3800,0.6200,0.0000,10.2440,18.0000,6.0000,2.8699

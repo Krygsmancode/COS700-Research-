@@ -1,40 +1,72 @@
-Best Fitness Achieved: 139.5
+Best Fitness Achieved: 431.0
 Best Parameters:
-MUTATION_RATE: 0.09956958000832132
-CROSSOVER_RATE: 0.9846756900646942
-PHASE2_MUTATION_RATE: 0.023399157627125942
-TOURNAMENT_SIZE: 6
+MUTATION_RATE: 0.06465817860596158
+CROSSOVER_RATE: 0.9366912291783044
+PHASE2_MUTATION_RATE: 0.035705549104306906
+TOURNAMENT_SIZE: 10
 phase2MaxDepth: 6
-phase1MaxDepth: 3
+phase1MaxDepth: 5
 POPULATION_SIZE: 200
 
 Best Agent Strategy Tree:
-Decision(NumberOfSafeMoves > 0.37)
+Decision(IsCellFreeUp > 0.47)
   If True:
-    Decision(IsCellFreeLeft > 0.14)
+    Decision(DistanceToCenter > 0.07)
       If True:
-        Decision(IsCellFreeDown > 0.74)
+        Decision(PreviousMove > 0.52)
           If True:
-            Action(Down)
+            Decision(PreviousMove > 0.79)
+              If True:
+                Action(Up)
+              If False:
+                Action(Right)
           If False:
-            Action(Up)
+            Decision(IsCellFreeDown > 0.60)
+              If True:
+                Action(Up)
+              If False:
+                Action(Up)
       If False:
-        Decision(IsCellFreeDown > 0.74)
+        Decision(PreviousMove > 0.52)
           If True:
-            Action(Down)
+            Decision(PreviousMove > 0.79)
+              If True:
+                Action(Up)
+              If False:
+                Action(Right)
           If False:
-            Action(Up)
+            Decision(IsCellFreeDown > 0.60)
+              If True:
+                Action(Up)
+              If False:
+                Action(Up)
   If False:
-    Decision(IsCellFreeLeft > 0.14)
+    Decision(NumberOfSafeMoves > 0.82)
       If True:
-        Decision(IsCellFreeRight > 0.74)
+        Decision(DistanceToOpponent > 0.87)
           If True:
-            Action(Down)
+            Decision(DistanceToWallUp > 0.78)
+              If True:
+                Action(Down)
+              If False:
+                Action(Right)
           If False:
-            Action(Right)
+            Decision(IsCellFreeUp > 0.17)
+              If True:
+                Action(Up)
+              If False:
+                Action(Up)
       If False:
-        Decision(IsCellFreeRight > 0.74)
+        Decision(IsCellFreeDown > 0.09)
           If True:
-            Action(Right)
+            Decision(DistanceToWallRight > 0.07)
+              If True:
+                Action(Down)
+              If False:
+                Action(Down)
           If False:
-            Action(Right)
+            Decision(IsCellFreeLeft > 0.17)
+              If True:
+                Action(Left)
+              If False:
+                Action(Right)

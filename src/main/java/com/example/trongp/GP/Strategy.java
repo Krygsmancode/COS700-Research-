@@ -138,17 +138,17 @@ public Strategy(int maxDepth, Random random, boolean useFullMethod, boolean isPh
 
     private Node crossoverNodes(Node one, Node two) {
         if (one == null || two == null) {
-            System.err.println("Attempted to crossover with null node.");
+   //         System.err.println("Attempted to crossover with null node.");
             return nonNullParent(one, two);
         }
         if (!one.isCompatibleForCrossover(two)) {
-            System.err.println("Incompatible nodes, selecting a non-null parent node.");
+ //           System.err.println("Incompatible nodes, selecting a non-null parent node.");
             return nonNullParent(one, two);
         }
         Node result = one.crossover(two);
         if (result == null) {
             System.err.println("Crossover resulted in null, selecting a non-null parent node.");
-            return nonNullParent(one, two);
+   //         return nonNullParent(one, two);
         }
         return result;
     }

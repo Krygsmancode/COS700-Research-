@@ -220,7 +220,7 @@ private double distanceToEnemyTrail(GameState gameState, int agentX, int agentY,
     @Override
     public Node crossover(Node other) {
         if (!(other instanceof DecisionNode)) {
-            System.err.println("Crossover attempted between incompatible types. Returning a clone.");
+    //        System.err.println("Crossover attempted between incompatible types. Returning a clone.");
             return this.clone();
         }
         DecisionNode otherNode = (DecisionNode) other;

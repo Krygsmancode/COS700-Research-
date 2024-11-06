@@ -17,19 +17,46 @@ import com.example.trongp.GP.GPParameters;
 
 public class ParameterOptimizer {
     private Random random;
+    private int seed;
+
     private List<OptimizationResult> results = new ArrayList<>();
 
-    public ParameterOptimizer(Random random) {
+
+    public ParameterOptimizer(Random random, int seed) {
         this.random = random;
+        this.seed = seed;
+    }
+
+    private void saveResults(EvolutionEngine engine, String outputDir, int trialNumber) {
+        Agent bestRedAgent = engine.getBestRedAgent();
+        Agent bestBlueAgent = engine.getBestBlueAgent();
+
+        // Update the csvFilename to include the outputDir
+        String csvFilename = outputDir + "/optimization_results.csv"; // CSV file for each trial
+
+        try (CSVSaver csvSaver = new CSVSaver(csvFilename)) {
+            csvSaver.saveRun(bestRedAgent, bestBlueAgent, seed, trialNumber);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 
+
+
 public void optimizeParameters(int trials) {
+    
     double bestFitness = Double.NEGATIVE_INFINITY;
     Map<String, Object> bestParameters = new HashMap<>();
     Agent bestAgent = null; // To store the best agent
 
-    
+    // Create seed directory
+    String seedDir = "Seed_" + seed;
+    File seedDirectory = new File(seedDir);
+    if (!seedDirectory.exists()) {
+        seedDirectory.mkdir();
+    }
+
     for (int i = 0; i < trials; i++) {
         // Use the existing random instance for generating parameters
         GPParameters.MUTATION_RATE = 0.01 + 0.09 * random.nextDouble();
@@ -41,20 +68,27 @@ public void optimizeParameters(int trials) {
 
 
         // Create a unique identifier for each trial
-        String trialId = "Trial_" + (i + 1);
-        String trialDir = trialId;
+        int trialNumber = i + 1;
+        String trialId = "Trial_" + trialNumber;
+        String trialDir = seedDir + "/" + trialId;
         File dir = new File(trialDir);
         if (!dir.exists()) {
-            dir.mkdir();
+            dir.mkdirs();
         }
+
+        // Update filenamePrefix for EvolutionEngine
+        String filenamePrefix = trialDir + "/EvolutionEngine";
 
         // Run the evolution engine with these parameters
         EvolutionEngine engine = new EvolutionEngine(
             GPParameters.POPULATION_SIZE,
             GPParameters.GENERATIONS,
-            trialDir + "/" + trialId,
+            filenamePrefix,
             random // Pass the shared Random instance
-        );        engine.runEvolution();
+        );       
+         engine.runEvolution(seed, trialNumber);
+
+         saveResults(engine, trialDir, trialNumber);
 
         // Get the fitness histories
         List<Double> bestFitnessHistorySolo = engine.getBestFitnessHistorySolo();
@@ -65,9 +99,9 @@ public void optimizeParameters(int trials) {
         List<Double> averageFitnessHistoryBlue = engine.getAverageFitnessHistoryBlue();
 
         // Save the fitness plots
-        saveFitnessPlot(bestFitnessHistorySolo, averageFitnessHistorySolo, trialDir + "/" + trialId + "_Phase1");
-        saveFitnessPlot(bestFitnessHistoryRed, averageFitnessHistoryRed, trialDir + "/" + trialId + "_Red");
-        saveFitnessPlot(bestFitnessHistoryBlue, averageFitnessHistoryBlue, trialDir + "/" + trialId + "_Blue");
+        saveFitnessPlot(bestFitnessHistorySolo, averageFitnessHistorySolo, trialDir + "/Phase1_FitnessPlot");
+        saveFitnessPlot(bestFitnessHistoryRed, averageFitnessHistoryRed, trialDir + "/RedPopulation_FitnessPlot");
+        saveFitnessPlot(bestFitnessHistoryBlue, averageFitnessHistoryBlue, trialDir + "/BluePopulation_FitnessPlot");
 
         // Get the best fitness achieved
         Agent currentBestAgent = engine.getBestRedAgent(); // Assuming best red agent
@@ -101,7 +135,7 @@ public void optimizeParameters(int trials) {
         System.out.println("Best Fitness so far: " + bestFitness);
 
         // Save the current result to file after each trial
-        saveResultsToFile("optimization_results.csv");
+        saveResultsToFile(seedDir + "/optimization_results.csv");
     }
 
     // Output the best parameters found
@@ -142,8 +176,12 @@ private void saveFitnessPlot(List<Double> bestFitnessHistory, List<Double> avera
             false
     );
 
+    // Ensure the directory exists
+    File file = new File(filename + ".png");
+    file.getParentFile().mkdirs();
+
     try {
-        ChartUtils.saveChartAsPNG(new File(filename + ".png"), chart, 800, 600);
+        ChartUtils.saveChartAsPNG(file, chart, 800, 600);
     } catch (IOException e) {
         e.printStackTrace();
     }
@@ -163,34 +201,38 @@ public EvolutionEngine getBluePopulation() {
 
     // In ParameterOptimizer.java
 
-private void saveResultsToFile(String filename) {
-    try (FileWriter writer = new FileWriter(filename)) {
-        // Write header
-        writer.append("Trial,MUTATION_RATE,PHASE2_MUTATION_RATE,CROSSOVER_RATE,POPULATION_SIZE,TOURNAMENT_SIZE,phase1MaxDepth,phase2MaxDepth,BestFitness,AverageFitness,FitnessVariance\n");
-        int trialNumber = 1;
-        for (OptimizationResult result : results) {
-            writer.append(String.valueOf(trialNumber)).append(",");
-            writer.append(String.valueOf(result.parameters.get("MUTATION_RATE"))).append(",");
-            writer.append(String.valueOf(result.parameters.get("PHASE2_MUTATION_RATE"))).append(",");
-            writer.append(String.valueOf(result.parameters.get("CROSSOVER_RATE"))).append(",");
-            writer.append(String.valueOf(result.parameters.get("POPULATION_SIZE"))).append(",");
-            writer.append(String.valueOf(result.parameters.get("TOURNAMENT_SIZE"))).append(",");
-            writer.append(String.valueOf(result.parameters.get("phase1MaxDepth"))).append(",");
-            writer.append(String.valueOf(result.parameters.get("phase2MaxDepth"))).append(",");
-            writer.append(String.valueOf(result.bestFitness)).append(",");
-            writer.append(String.valueOf(result.averageFitness)).append(",");
-            writer.append(String.valueOf(result.varianceFitness)).append("\n");
-            trialNumber++;
+    private void saveResultsToFile(String filename) {
+        boolean fileExists = new File(filename).exists();
+        try (FileWriter writer = new FileWriter(filename, true)) {
+            // Write header if file does not exist
+            if (!fileExists) {
+                writer.append("Trial,Seed,MUTATION_RATE,PHASE2_MUTATION_RATE,CROSSOVER_RATE,POPULATION_SIZE,TOURNAMENT_SIZE,phase1MaxDepth,phase2MaxDepth,BestFitness,AverageFitness,FitnessVariance\n");
+            }
+            int trialNumber = 1;
+            for (OptimizationResult result : results) {
+                writer.append(String.valueOf(trialNumber)).append(",");
+                writer.append(String.valueOf(seed)).append(",");
+                writer.append(String.valueOf(result.parameters.get("MUTATION_RATE"))).append(",");
+                writer.append(String.valueOf(result.parameters.get("PHASE2_MUTATION_RATE"))).append(",");
+                writer.append(String.valueOf(result.parameters.get("CROSSOVER_RATE"))).append(",");
+                writer.append(String.valueOf(result.parameters.get("POPULATION_SIZE"))).append(",");
+                writer.append(String.valueOf(result.parameters.get("TOURNAMENT_SIZE"))).append(",");
+                writer.append(String.valueOf(result.parameters.get("phase1MaxDepth"))).append(",");
+                writer.append(String.valueOf(result.parameters.get("phase2MaxDepth"))).append(",");
+                writer.append(String.valueOf(result.bestFitness)).append(",");
+                writer.append(String.valueOf(result.averageFitness)).append(",");
+                writer.append(String.valueOf(result.varianceFitness)).append("\n");
+                trialNumber++;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-    } catch (IOException e) {
-        e.printStackTrace();
     }
-}
 
 
    // In ParameterOptimizer.java
 
-private void saveBestResultToFile(String filename, Map<String, Object> bestParameters, double bestFitness, Agent bestAgent) {
+   private void saveBestResultToFile(String filename, Map<String, Object> bestParameters, double bestFitness, Agent bestAgent) {
     try (FileWriter writer = new FileWriter(filename)) {
         writer.write("Best Fitness Achieved: " + bestFitness + "\n");
         writer.write("Best Parameters:\n");
@@ -203,5 +245,7 @@ private void saveBestResultToFile(String filename, Map<String, Object> bestParam
         e.printStackTrace();
     }
 }
+
+// ...existing code...
 
 }

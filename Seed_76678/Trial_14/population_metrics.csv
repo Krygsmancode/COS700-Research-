@@ -1,0 +1,3 @@
+76678,14,0.1540,0.8460,0.0000,8.4940,10.0000,6.0000,1.2174
+Seed,Trial,Population Size,Phase1 Max Depth,Phase2 Max Depth,Mutation Rate,Phase2 Mutation Rate,Tournament Size,Crossover Rate,Grid Size,Generations,Games to Play,Win Weight,Trail Weight,Best Red Agent Fitness,Best Blue Agent Fitness
+76678,14,0.2900,0.7100,0.0000,11.0500,16.0000,7.0000,1.4736

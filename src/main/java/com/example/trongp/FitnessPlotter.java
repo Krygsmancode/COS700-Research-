@@ -228,22 +228,32 @@ blueVarianceSeries.add(generation, varianceBlue);
 
 
 
-public void savePhase1Plot(String filename) {
-    try {
-        ChartUtils.saveChartAsPNG(new File(filename + ".png"), chartPhase1, 800, 600);
-    } catch (IOException e) {
-        e.printStackTrace();
-    }
-}
+    public void savePhase1Plot(String filename) {
+        // Ensure the directory exists
+        File file = new File(filename + ".png");
+        file.getParentFile().mkdirs();
 
-public void savePhase2Plot(String filename) {
-    try {
-        ChartUtils.saveChartAsPNG(new File(filename + ".png"), chartPhase2, 800, 600);
-    } catch (IOException e) {
-        e.printStackTrace();
+        // Save the plot
+        try {
+            ChartUtils.saveChartAsPNG(file, chartPhase1, 800, 600);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
-}
 
+    public void savePhase2Plot(String filename) {
+        // Ensure the directory exists
+        File file = new File(filename + ".png");
+        file.getParentFile().mkdirs();
+
+        // Save the plot
+        try {
+            ChartUtils.saveChartAsPNG(file, chartPhase2, 800, 600);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    
 
     
 }

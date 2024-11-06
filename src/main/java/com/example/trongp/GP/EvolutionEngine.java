@@ -11,8 +11,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import com.example.trongp.CSVSaver;
 import com.example.trongp.FitnessPlotter;
 import com.example.trongp.GameState;
+import com.example.trongp.GP.HandCraftedAgent;
 
 public class EvolutionEngine {
     private Population population;
@@ -81,7 +83,7 @@ featureUsageHistorySolo = new ArrayList<>();
         fitnessPlotter = new FitnessPlotter(filenamePrefix);
     }
 
-    public void runEvolution() {
+    public void runEvolution(int seed, int trialNumber) {
         // Phase 1: Solo Phase
   //      System.out.println("Starting Phase 1: Solo Phase");
         for (int generation = 1; generation <= GPParameters.PHASE1_GENERATIONS; generation++) {
@@ -177,12 +179,10 @@ featureUsageHistorySolo = new ArrayList<>();
 
 
         simulateBestAgentsGame(); // Existing method
-        compareTopAgentsWithHandCrafted();
+        compareTopAgentsWithHandCrafted(seed, trialNumber);
 
-        
-fitnessPlotter.savePhase1Plot(filenamePrefix + "_Phase1_FitnessPlot");
-fitnessPlotter.savePhase2Plot(filenamePrefix + "_Phase2_FitnessPlot");
-
+        // Update paths for saving fitness plots
+        saveFitnessPlots();
     }
 
     private Map<Integer, Integer> aggregateFeatureUsage(List<Map<Integer, Integer>> featureUsageHistory) {
@@ -227,10 +227,10 @@ fitnessPlotter.savePhase2Plot(filenamePrefix + "_Phase2_FitnessPlot");
         fitnessVarianceHistory.add(population.getFitnessVariance());
 
         // Debugging: Print collected fitness data
-        System.out.println("Collected Fitness Data:");
-        System.out.println("  Best Fitness: " + population.getBestFitness());
-        System.out.println("  Mean Fitness: " + population.getMeanFitness());
-        System.out.println("  Fitness Variance: " + population.getFitnessVariance());
+        // System.out.println("Collected Fitness Data:");
+        // System.out.println("  Best Fitness: " + population.getBestFitness());
+        // System.out.println("  Mean Fitness: " + population.getMeanFitness());
+        // System.out.println("  Fitness Variance: " + population.getFitnessVariance());
     }
 
     private void simulateBestSoloAgent() {
@@ -267,7 +267,7 @@ fitnessPlotter.savePhase2Plot(filenamePrefix + "_Phase2_FitnessPlot");
 
     // In EvolutionEngine.java
 
-    public void compareTopAgentsWithHandCrafted() {
+    public void compareTopAgentsWithHandCrafted(int seed, int trialNumber) {
         System.out.println("\nComparing top agents with the hand-crafted agent...");
     
         // Get top N agents from red and blue populations
@@ -275,15 +275,19 @@ fitnessPlotter.savePhase2Plot(filenamePrefix + "_Phase2_FitnessPlot");
         List<Agent> topRedAgents = redPopulation.getTopNAgents(numberOfAgents);
         List<Agent> topBlueAgents = bluePopulation.getTopNAgents(numberOfAgents);
     
-        // Create a hand-crafted agent
-        HandCraftedAgent handCraftedAgent = new HandCraftedAgent(2, this.random); // Agent number 2 for opponent
+        // Assign unique agent numbers to avoid conflicts
+        int evolvedAgentNumber = 1;
+        int handCraftedAgentNumber = 2;
+    
+        // Create a hand-crafted agent with a unique number
+        HandCraftedAgent handCraftedAgent = new HandCraftedAgent(handCraftedAgentNumber, this.random); // Agent number 2 for opponent
     
         // Number of games to play
         int gamesToPlay = 100; // Set a fixed number of games
     
         // Collect statistics
-        Map<String, Double> redStats = simulateAgentsAgainstHandCrafted(topRedAgents, handCraftedAgent, gamesToPlay);
-        Map<String, Double> blueStats = simulateAgentsAgainstHandCrafted(topBlueAgents, handCraftedAgent, gamesToPlay);
+        Map<String, Double> redStats = simulateAgentsAgainstHandCrafted(topRedAgents, handCraftedAgent, gamesToPlay,seed, trialNumber, evolvedAgentNumber, handCraftedAgentNumber);
+        Map<String, Double> blueStats = simulateAgentsAgainstHandCrafted(topBlueAgents, handCraftedAgent, gamesToPlay,seed, trialNumber, evolvedAgentNumber, handCraftedAgentNumber);
     
         // Present results
         System.out.println("\n--- Results Against Hand-Crafted Agent ---");
@@ -293,8 +297,11 @@ fitnessPlotter.savePhase2Plot(filenamePrefix + "_Phase2_FitnessPlot");
         System.out.println("Blue Agents vs Hand-Crafted Agent:");
         displayStats(blueStats);
     
-        // Save results to file
-        saveComparisonResults("comparison_results.csv", redStats, blueStats);
+        // Extract the output directory from filenamePrefix
+        String outputDir = filenamePrefix.substring(0, filenamePrefix.lastIndexOf('/'));
+
+        // Save results to file within the correct directory
+        saveComparisonResults(outputDir + "/comparison_results.csv", redStats, blueStats);
     }
 
     private void saveComparisonResults(String filename, Map<String, Double> redStats, Map<String, Double> blueStats) {
@@ -310,7 +317,7 @@ fitnessPlotter.savePhase2Plot(filenamePrefix + "_Phase2_FitnessPlot");
 }
 
     // Method to simulate multiple games between GP agents and a hand-crafted agent
-    private Map<String, Double> simulateAgentsAgainstHandCrafted(List<Agent> agents, HandCraftedAgent handCraftedAgent, int gamesToPlay) {
+    private Map<String, Double> simulateAgentsAgainstHandCrafted(List<Agent> agents, HandCraftedAgent handCraftedAgent, int gamesToPlay, int seed, int trialNumber, int evolvedAgentNumber, int handCraftedAgentNumber) {
         int totalGames = gamesToPlay * agents.size();
         int totalWins = 0;
         int totalLosses = 0;
@@ -323,8 +330,8 @@ fitnessPlotter.savePhase2Plot(filenamePrefix + "_Phase2_FitnessPlot");
         for (Agent agent : agents) {
             for (int i = 0; i < gamesToPlay; i++) {
                 // Clone agents to ensure consistency
-                Agent clonedAgent = agent.cloneWithNewNumber(1); // Agent number 1 for our GP agent
-                HandCraftedAgent clonedHandCraftedAgent = (HandCraftedAgent) handCraftedAgent.cloneWithNewNumber(2); // Agent number 2 for the hand-crafted agent
+                Agent clonedAgent = agent.cloneWithNewNumber(evolvedAgentNumber); // Agent number 1 for our GP agent
+                HandCraftedAgent clonedHandCraftedAgent = (HandCraftedAgent) handCraftedAgent.cloneWithNewNumber(handCraftedAgentNumber); // Agent number 2 for the hand-crafted agent
 
                 // Initialize a new game state
                 GameState gameState = new GameState(GPParameters.GRID_SIZE, GPParameters.GRID_SIZE, false, this.random);
@@ -374,6 +381,15 @@ fitnessPlotter.savePhase2Plot(filenamePrefix + "_Phase2_FitnessPlot");
         stats.put("MaxTrailLength", (double) maxTrailLength);
         stats.put("MinTrailLength", (double) minTrailLength);
         stats.put("TrailLengthStdDev", trailLengthStdDev);
+
+            try {
+        String metricsFilePath = "Seed_" + seed + "/Trial_" + trialNumber + "/population_metrics.csv";
+        try (CSVSaver saver = new CSVSaver(metricsFilePath)) {
+			saver.savePopulationMetrics(metricsFilePath, seed, trialNumber, stats);
+		}
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
 
         return stats;
     }
@@ -432,8 +448,9 @@ public Population getBluePopulation() {
 
 
     private void simulateBestAgentsGame() {
-        Agent bestRed = redPopulation.getBestAgent().cloneWithNewNumber(1);
-        Agent bestBlue = bluePopulation.getBestAgent().cloneWithNewNumber(2);
+    // Ensure agents have correct numbers
+    Agent bestRed = redPopulation.getBestAgent().cloneWithNewNumber(1);
+    Agent bestBlue = bluePopulation.getBestAgent().cloneWithNewNumber(2);
 
         System.out.println("\nSimulating game between best agents:");
         System.out.println("Best Red Agent #" + bestRed.getNumber() + " Fitness: " + bestRed.getFitness());
@@ -530,6 +547,11 @@ for (int i = 0; i < numNewAgents; i++) {
         bluePopulation = new Population(blueAgents, GPParameters.phase2MaxDepth, random, false, 2);
     
         isSoloPhase = false; // Transition to competitive phase
+    }
+    
+    public void saveFitnessPlots() {
+        fitnessPlotter.savePhase1Plot(filenamePrefix + "_Phase1_FitnessPlot");
+        fitnessPlotter.savePhase2Plot(filenamePrefix + "_Phase2_FitnessPlot");
     }
     
 }

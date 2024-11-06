@@ -1,0 +1,3 @@
+343434,11,0.1540,0.8460,0.0000,8.3340,10.0000,6.0000,1.3048
+Seed,Trial,Population Size,Phase1 Max Depth,Phase2 Max Depth,Mutation Rate,Phase2 Mutation Rate,Tournament Size,Crossover Rate,Grid Size,Generations,Games to Play,Win Weight,Trail Weight,Best Red Agent Fitness,Best Blue Agent Fitness
+343434,11,0.1800,0.8200,0.0000,9.2540,14.0000,6.0000,1.9914

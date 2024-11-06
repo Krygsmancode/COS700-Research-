@@ -3,24 +3,29 @@ package com.example.trongp.GP;
 import com.example.trongp.GameState;
 import com.example.trongp.Point;
 import java.util.Random;
+import java.util.List;
+import java.util.ArrayList;
 
 public class HandCraftedAgent extends Agent {
     private Random random;
 
     public HandCraftedAgent(int agentNumber, Random random) {
-        super(null, agentNumber,random); // No strategy tree needed
+        super(null, agentNumber, random); // No strategy tree needed
         this.random = random;
     }
 
     @Override
     public int makeMove(GameState gameState, int agentNumber) {
-        // Implement a basic heuristic. For this example, the agent will prefer to move in the following order: Up, Right, Down, Left
-        int[] preferredMoves = {0, 3, 1, 2}; // Up, Right, Down, Left
-
-        for (int move : preferredMoves) {
+        // Collect all safe moves
+        List<Integer> safeMoves = new ArrayList<>();
+        for (int move = 0; move < 4; move++) {
             if (isMoveSafe(gameState, agentNumber, move)) {
-                return move;
+                safeMoves.add(move);
             }
+        }
+        // Randomly select a safe move
+        if (!safeMoves.isEmpty()) {
+            return safeMoves.get(random.nextInt(safeMoves.size()));
         }
         return -1; // No safe moves available
     }
@@ -42,18 +47,18 @@ public class HandCraftedAgent extends Agent {
     }
 
     @Override
-public Agent clone() {
-    HandCraftedAgent clonedAgent = new HandCraftedAgent(this.getNumber(), this.random);
-    clonedAgent.setFitness(this.getFitness());
-    clonedAgent.setElite(this.isElite());
-    return clonedAgent;
-}
+    public Agent clone() {
+        HandCraftedAgent clonedAgent = new HandCraftedAgent(this.getNumber(), this.random);
+        clonedAgent.setFitness(this.getFitness());
+        clonedAgent.setElite(this.isElite());
+        return clonedAgent;
+    }
 
-@Override
-public Agent cloneWithNewNumber(int newNumber) {
-    HandCraftedAgent clonedAgent = new HandCraftedAgent(newNumber, this.random);
-    clonedAgent.setFitness(this.getFitness());
-    clonedAgent.setElite(this.isElite());
-    return clonedAgent;
-}
+    @Override
+    public Agent cloneWithNewNumber(int newNumber) {
+        HandCraftedAgent clonedAgent = new HandCraftedAgent(newNumber, this.random);
+        clonedAgent.setFitness(this.getFitness());
+        clonedAgent.setElite(this.isElite());
+        return clonedAgent;
+    }
 }

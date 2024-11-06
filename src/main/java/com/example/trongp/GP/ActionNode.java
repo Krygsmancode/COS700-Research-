@@ -58,7 +58,7 @@ public class ActionNode extends Node {
     @Override
     public Node crossover(Node other) {
         if (!(other instanceof ActionNode)) {
-            System.err.println("Crossover attempted between incompatible types. Returning a clone.");
+ //           System.err.println("Crossover attempted between incompatible types. Returning a clone.");
             return this.clone();
         }
         ActionNode otherNode = (ActionNode) other;

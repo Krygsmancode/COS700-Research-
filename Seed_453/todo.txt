@@ -1,0 +1,14 @@
+What happens when agents heads colide
+
+how many times did evolved agents play against hand crafted agent 
+
+add Statistics on the best run. variance 
+
+add parameters used for optimaal agent 
+
+add section decribing each hyperparameter used,
+
+discussion of results
+
+
+Help me add al the graphs i have available
